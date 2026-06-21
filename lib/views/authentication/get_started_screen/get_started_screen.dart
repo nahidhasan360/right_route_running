@@ -24,7 +24,7 @@ class GetStartedScreen extends StatelessWidget {
 
     final TextStyle bodyStyle = TextStyle(
       color: Colors.white,
-      fontSize: context.sp(18),
+      fontSize: context.sp(20),
       fontFamily: 'Lato',
       fontWeight: FontWeight.w500,
       height: 1.40,
@@ -32,7 +32,7 @@ class GetStartedScreen extends StatelessWidget {
 
     final TextStyle subBodyStyle = TextStyle(
       color: Colors.white,
-      fontSize: context.sp(16),
+      fontSize: context.sp(18),
       fontFamily: 'Lato',
       fontWeight: FontWeight.w500,
       height: 1.44,
@@ -72,7 +72,7 @@ class GetStartedScreen extends StatelessWidget {
             decoration: BoxDecoration(
               image: DecorationImage(
                 image: AssetImage(ImageManager.splashScreenLogo),
-                fit: BoxFit.contain,
+                fit: BoxFit.cover,
               ),
             ),
           ),
@@ -138,12 +138,12 @@ class GetStartedScreen extends StatelessWidget {
           alignment: Alignment.center,
           padding: EdgeInsets.all(context.s(16)),
           child: Container(
-            width: context.w(180),
-            height: context.h(90),
+            width: context.w(225),
+            height: context.h(112),
             decoration: BoxDecoration(
               image: DecorationImage(
                 image: AssetImage(ImageManager.splashScreenLogo),
-                fit: BoxFit.contain,
+                fit: BoxFit.cover,
               ),
             ),
           ),
@@ -214,7 +214,7 @@ class GetStartedScreen extends StatelessWidget {
         ),
         SizedBox(height: context.h(5)),
         GestureDetector(
-          onTap: () => Get.toNamed(AppRoutes.loginAccount),
+          onTap: () => Get.toNamed(AppRoutes.getStartedSignInScreen),
           child: Text(
             'SIGN IN',
             style: TextStyle(

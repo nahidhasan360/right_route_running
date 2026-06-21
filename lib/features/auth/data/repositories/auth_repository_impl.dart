@@ -9,6 +9,11 @@ class AuthRepositoryImpl implements AuthRepository {
   AuthRepositoryImpl({required this.remoteDataSource});
 
   @override
+  Future<AuthResult> checkDeviceInfo(Map<String, dynamic> deviceInfo) async {
+    return _handleRequest(() => remoteDataSource.checkDeviceInfo(deviceInfo));
+  }
+
+  @override
   Future<AuthResult> sendDeviceInfo(Map<String, dynamic> deviceInfo) async {
     return _handleRequest(() => remoteDataSource.sendDeviceInfo(deviceInfo));
   }

@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import '../../../../views/home/home_api_constant/home_api_constant.dart';
 
 abstract class AuthRemoteDataSource {
+  Future<Response> checkDeviceInfo(Map<String, dynamic> deviceInfo);
   Future<Response> sendDeviceInfo(Map<String, dynamic> deviceInfo);
   Future<Response> continueWithEmail(String email);
   Future<Response> createPassword(String email, String password);
@@ -14,6 +15,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final Dio dio;
   
   AuthRemoteDataSourceImpl({required this.dio});
+
+  @override
+  Future<Response> checkDeviceInfo(Map<String, dynamic> deviceInfo) async {
+    return await dio.get(
+      '${HomeApiConstant.baseUrl}/auth/device-info/',
+      data: deviceInfo, // Using data in GET request as requested by API
+    );
+  }
 
   @override
   Future<Response> sendDeviceInfo(Map<String, dynamic> deviceInfo) async {

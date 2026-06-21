@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:right_routes/core/constants/services/auth_service.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../../../core/constants/services/device_storage_service.dart';
 import '../../../../core/routes/all_routes.dart';
@@ -40,22 +41,34 @@ class AuthController extends GetxController {
       debugPrint('📱 Device Id: $deviceId');
       debugPrint('===================================================\n');
 
-      // 2. Call device-info API to register/check device
+      // 2. Call device-info API to check device status (GET)
       if (deviceId != null) {
         try {
-          final result = await _authRepository.sendDeviceInfo({
+          final checkResult = await _authRepository.checkDeviceInfo({
             'device_id': deviceId,
-            'platform': GetPlatform.isAndroid ? 'Android' : 'iOS',
           });
 
-          if (!result.success) {
-            debugPrint(
-                '⚠️ [AuthController] sendDeviceInfo failed: ${result.message}');
+          if (checkResult.success) {
+            final data = checkResult.data;
+            bool isDeviceRegister = data['device_register'] == true;
+            
+            if (isDeviceRegister) {
+              debugPrint('✅ [AuthController] Device is already registered.');
+              if (data['device_user_email'] != null) {
+                await AuthService.saveDeviceUserEmail(data['device_user_email']);
+              }
+              // Mark as trusted for routing
+              await _deviceStorage.saveTrustedStatus(true);
+            } else {
+              debugPrint('⚠️ [AuthController] Device not registered. Will route to Get Started.');
+              // We do not auto-register here anymore, user must go through Get Started
+              await _deviceStorage.saveTrustedStatus(false);
+            }
           } else {
-            debugPrint('✅ [AuthController] sendDeviceInfo success!');
+            debugPrint('⚠️ [AuthController] checkDeviceInfo failed: ${checkResult.message}');
           }
         } catch (e) {
-          debugPrint('⚠️ [AuthController] sendDeviceInfo exception (ignoring): $e');
+          debugPrint('⚠️ [AuthController] checkDeviceInfo exception (ignoring): $e');
         }
       } else {
         debugPrint('❌ [AuthController] Failed to get Device ID!');
@@ -75,8 +88,12 @@ class AuthController extends GetxController {
           Get.offAllNamed(AppRoutes.homeScreen);
         }
       } else {
-        // Route to the initial Login / Email input screen
-        Get.offAllNamed(AppRoutes.enterEmailScreen);
+        // Route based on device trust status
+        if (isTrusted) {
+          Get.offAllNamed(AppRoutes.enterEmailScreen);
+        } else {
+          Get.offAllNamed(AppRoutes.getStartedScreen);
+        }
       }
     } catch (e) {
       debugPrint("❌ [AuthController] Error on App Launch: $e");

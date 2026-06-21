@@ -7,13 +7,16 @@ import 'package:right_routes/views/authentication/login_account/login_api_servic
 class OtpVerificationController extends GetxController {
   final LoginApiService _apiService = LoginApiService();
 
-  final TextEditingController otpController = TextEditingController();
+  // otpController removed — pin field is managed internally by pin_code_fields
+  // pinResetKey is incremented to trigger a fresh empty pin field on resend
+  final RxInt pinResetKey = 0.obs;
   final RxString otp = ''.obs;
   final RxBool isVerifying = false.obs;
   final RxBool isResending = false.obs;
 
   String email = '';
   String nextRoute = AppRoutes.weLoggedYou;
+  String purpose = 'REGISTER';
 
   @override
   void onInit() {
@@ -29,12 +32,13 @@ class OtpVerificationController extends GetxController {
       } else if (args is Map) {
         email = args['email']?.toString() ?? '';
         nextRoute = args['nextRoute']?.toString() ?? AppRoutes.weLoggedYou;
+        purpose = args['purpose']?.toString() ?? 'REGISTER';
       }
     }
     if (email.isEmpty) {
       email = AuthService.getUserEmail() ?? '';
     }
-    print('[OTP-CTRL] Initialized | email: $email | nextRoute: $nextRoute');
+    print('[OTP-CTRL] Initialized | email: $email | nextRoute: $nextRoute | purpose: $purpose');
   }
 
   void onOtpChanged(String value) {
@@ -56,45 +60,47 @@ class OtpVerificationController extends GetxController {
     isVerifying.value = true;
 
     try {
-      final result =
-          await _apiService.verifyOtp(email: email, otpCode: otp.value);
+      final result = await _apiService.verifyOtp(
+        email: email, 
+        otpCode: otp.value,
+        purpose: purpose,
+      );
 
       if (result['success'] == true) {
         final rawData = result['data'];
         final data = rawData['data'] ?? rawData;
-
-        // Save tokens
-        if (data['access'] != null) {
-          await AuthService.saveAccessToken(data['access']);
-        }
-        if (data['refresh'] != null) {
-          await AuthService.saveRefreshToken(data['refresh']);
-        }
-
-        // Save user data
-        if (data['user'] != null) {
-          final user = data['user'];
-          if (user['email'] != null) {
-            await AuthService.saveUserEmail(user['email']);
-          }
-          if (user['name'] != null) {
-            await AuthService.saveUserName(user['name']);
-          }
-          if (user['id'] != null) {
-            await AuthService.saveUserId(user['id'].toString());
-          }
-        }
-
-        await AuthService.saveLoginStatus(true);
+        final nextStep = data['next_step']?.toString();
 
         _showSuccess('Verification successful!');
         await Future.delayed(const Duration(milliseconds: 800));
 
-        // Navigate dynamically
-        if (nextRoute == AppRoutes.loginAccount) {
-          Get.offAllNamed(nextRoute, arguments: {'email': email});
+        // Check if API returned tokens (Registration Flow)
+        if (data['access'] != null) {
+          await AuthService.saveAccessToken(data['access']);
+          if (data['refresh'] != null) {
+            await AuthService.saveRefreshToken(data['refresh']);
+          }
+
+          if (data['user'] != null) {
+            final user = data['user'];
+            if (user['email'] != null) await AuthService.saveUserEmail(user['email']);
+            if (user['name'] != null) await AuthService.saveUserName(user['name']);
+            if (user['id'] != null) await AuthService.saveUserId(user['id'].toString());
+          }
+
+          await AuthService.saveLoginStatus(true);
+          Get.offAllNamed(AppRoutes.weLoggedYou);
         } else {
-          Get.offAllNamed(nextRoute);
+          // Navigate based on next_step from the backend (Login Flow)
+          if (nextStep == 'SUBMIT_PASSWORD') {
+            Get.offAllNamed(AppRoutes.loginAccount, arguments: {'email': email});
+          } else if (nextStep == 'CREATE_PASSWORD') {
+            Get.offAllNamed(AppRoutes.createAccountScreen, arguments: {'email': email});
+          } else if (nextRoute == AppRoutes.loginAccount) {
+            Get.offAllNamed(nextRoute, arguments: {'email': email});
+          } else {
+            Get.offAllNamed(nextRoute);
+          }
         }
       } else {
         _showError(result['message'] ?? 'Invalid OTP. Please try again.');
@@ -116,10 +122,10 @@ class OtpVerificationController extends GetxController {
     isResending.value = true;
 
     try {
-      final result = await _apiService.sendOtp(email: email);
+      final result = await _apiService.sendOtp(email: email, purpose: purpose);
 
       if (result['success'] == true) {
-        otpController.clear();
+        pinResetKey.value++; // triggers PinCodeTextField to rebuild fresh
         otp.value = '';
         _showSuccess('OTP has been resent to your email');
       } else {

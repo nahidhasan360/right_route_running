@@ -81,6 +81,19 @@ class AuthService {
     return email;
   }
 
+  // Save Device User Email (from device-info check)
+  static Future<bool> saveDeviceUserEmail(String email) async {
+    print('💾 Saving Device User Email: $email');
+    return await _prefs?.setString('device_user_email', email) ?? false;
+  }
+
+  // Get Device User Email
+  static String? getDeviceUserEmail() {
+    final email = _prefs?.getString('device_user_email');
+    print('📤 Getting Device User Email: $email');
+    return email;
+  }
+
   // Save User Name
   static Future<bool> saveUserName(String name) async {
     print('💾 Saving User Name: $name');

@@ -3,6 +3,7 @@ import 'package:right_routes/features/auth/domain/entities/auth_result.dart';
 
 
 abstract class AuthRepository {
+  Future<AuthResult> checkDeviceInfo(Map<String, dynamic> deviceInfo);
   Future<AuthResult> sendDeviceInfo(Map<String, dynamic> deviceInfo);
   
   Future<AuthResult> continueWithEmail(String email);

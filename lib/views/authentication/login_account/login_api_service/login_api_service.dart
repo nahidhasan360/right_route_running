@@ -46,15 +46,15 @@ class LoginApiService {
   }
 
   // ─── SEND OTP ─────────────────────────────────────────────
-  Future<Map<String, dynamic>> sendOtp({required String email}) async {
+  Future<Map<String, dynamic>> sendOtp({required String email, required String purpose}) async {
     try {
-      final url = Uri.parse(ApiConfig.fullRequestOtpUrl);
-      debugLog('SEND-OTP', 'POST $url | email: $email');
+      final url = Uri.parse(ApiConfig.fullResendOtpUrl);
+      debugLog('SEND-OTP', 'POST $url | email: $email, purpose: $purpose');
 
       final response = await ApiClient.post(
         url,
         headers: {'Content-Type': 'application/json'},
-        body: {'email': email},
+        body: {'email': email, 'purpose': purpose},
         requireAuth: false,
       );
 
@@ -73,22 +73,51 @@ class LoginApiService {
         };
       }
     } catch (e) {
-      debugLog('SEND-OTP', 'EXCEPTION: $e');
-      return {
-        'success': false,
-        'message': 'Network error. Please check your connection.'
-      };
+      debugLog('SEND-OTP-ERROR', e.toString());
+      return {'success': false, 'message': 'Network error'};
     }
   }
 
-  // ─── VERIFY OTP ───────────────────────────────────────────
+  // ─── GET USER INFO ─────────────────────────────────────────
+  Future<Map<String, dynamic>> getUserInfo() async {
+    try {
+      final url = Uri.parse(ApiConfig.fullUserInfoUrl);
+      debugLog('USER-INFO', 'GET $url');
+
+      final response = await ApiClient.get(
+        url,
+        requireAuth: true, // Needs authentication token
+      );
+
+      final statusCode = response.statusCode;
+      final data = response.data;
+      debugLog('USER-INFO-RESP', 'Status: $statusCode | Body: $data');
+
+      if (statusCode == 200 && data['success'] == true) {
+        return {
+          'success': true,
+          'data': data['data'],
+        };
+      } else {
+        return {
+          'success': false,
+          'message': data['detail'] ?? 'Failed to get user info',
+        };
+      }
+    } catch (e) {
+      debugLog('USER-INFO-ERROR', e.toString());
+      return {'success': false, 'message': 'Network error'};
+    }
+  }
+
   Future<Map<String, dynamic>> verifyOtp({
     required String email,
     required String otpCode,
+    required String purpose,
   }) async {
     try {
       final url = Uri.parse(ApiConfig.fullVerifyOtpUrl);
-      debugLog('VERIFY-OTP', 'POST $url | email: $email, otp: $otpCode');
+      debugLog('VERIFY-OTP', 'POST $url | email: $email, otp: $otpCode, purpose: $purpose');
 
       final response = await ApiClient.post(
         url,
@@ -96,7 +125,7 @@ class LoginApiService {
           'Content-Type': 'application/json',
           'Accept': 'application/json'
         },
-        body: {'email': email.trim(), 'otp_code': otpCode.trim()},
+        body: {'email': email.trim(), 'otp_code': otpCode.trim(), 'purpose': purpose},
         requireAuth: false,
       );
 

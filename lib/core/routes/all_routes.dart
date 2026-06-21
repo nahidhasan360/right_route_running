@@ -12,6 +12,7 @@ import '../../views/authentication/create_an_account/create_an_account.dart';
 import '../../views/authentication/enter_email_for_delete/enter_email_for_delete.dart';
 import '../../views/authentication/enter_email_screen/enter_email_screen.dart';
 import '../../views/authentication/get_started_screen/get_started_screen.dart';
+import '../../views/authentication/get_started_screen/getstarted_sign_in_screen.dart';
 import '../../views/authentication/login_account/email_edit/email_edit.dart';
 import '../../views/authentication/login_account/login_account.dart';
 import '../../views/authentication/login_account/otp_verification/otp_verification_binding.dart';
@@ -39,6 +40,7 @@ class AppRoutes {
 
   static const String splashScreen = "/SplashScreen";
   static const String getStartedScreen = "/GetStartedScreen";
+  static const String getStartedSignInScreen = "/GetStartedSignInScreen";
   static const String enterEmailForDelete = "/EnterEmailForDelete";
 
   // ================== Enter Email screen =====================//
@@ -126,6 +128,11 @@ class AppRoutes {
         transitionDuration: const Duration(milliseconds: 300),
         name: getStartedScreen,
         page: () => GetStartedScreen()),
+    GetPage(
+        transition: Transition.fadeIn,
+        transitionDuration: const Duration(milliseconds: 300),
+        name: getStartedSignInScreen,
+        page: () => GetStartedSignInScreen()),
     GetPage(
         transition: Transition.fadeIn,
         transitionDuration: const Duration(milliseconds: 300),

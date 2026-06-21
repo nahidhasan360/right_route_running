@@ -24,15 +24,24 @@ class EnterEmailController extends GetxController {
       return;
     }
 
-    if (!GetUtils.isEmail(emailController.text.trim())) {
+    if (!GetUtils.isEmail(emailController.text)) {
       _showError('Please enter a valid email address');
+      return;
+    }
+
+    final inputEmail = emailController.text.trim();
+    final savedDeviceEmail = AuthService.getDeviceUserEmail();
+
+    // Flowchart logic: If device is registered to an email, enforce using that email
+    if (savedDeviceEmail != null && savedDeviceEmail.isNotEmpty && savedDeviceEmail != inputEmail) {
+      _showError('This device is registered to another email. You cannot continue.');
       return;
     }
 
     isLoading.value = true;
 
     try {
-      final result = await _apiService.checkEmail(emailController.text.trim());
+      final result = await _apiService.checkEmail(inputEmail);
 
       if (result['success'] == true) {
         final data = result['data'];
@@ -48,16 +57,33 @@ class EnterEmailController extends GetxController {
           await AuthService.saveUserEmail(userEmail.value);
         }
 
-        if (exists.value == true) {
+        if (action.value == 'OTP_VERIFY') {
+          Get.toNamed(AppRoutes.otpVerificationScreen, arguments: {
+            'email': userEmail.value,
+            'purpose': 'LOGIN',
+            'nextRoute': AppRoutes.loginAccount,
+          });
+        } else if (action.value == 'SUBMIT_PASSWORD') {
           Get.toNamed(AppRoutes.loginAccount, arguments: {
             'email': userEmail.value,
-            'token': '',
           });
-        } else {
+        } else if (action.value == 'CREATE_PASSWORD') {
           Get.toNamed(AppRoutes.createAccountScreen, arguments: {
             'email': userEmail.value,
-            'token': '',
           });
+        } else {
+          // Fallback based on exists flag if next_step is missing or unrecognized
+          if (exists.value == true) {
+            Get.toNamed(AppRoutes.loginAccount, arguments: {
+              'email': userEmail.value,
+              'token': '',
+            });
+          } else {
+            Get.toNamed(AppRoutes.createAccountScreen, arguments: {
+              'email': userEmail.value,
+              'token': '',
+            });
+          }
         }
       } else {
         _showError(result['message'] ?? 'Something went wrong');

@@ -2,32 +2,32 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
-import '../../../../utils/assets_manager.dart';
-import '../../../../utils/colors.dart';
+import 'package:right_routes/views/authentication/get_started_screen/getstarted_signin_controller.dart';
 import 'package:right_routes/global_widgets/custom_buttons.dart';
-import 'package:right_routes/controllers/auth/otp_verification_controller.dart';
+import 'package:right_routes/utils/assets_manager.dart';
+import 'package:right_routes/utils/colors.dart';
 import 'package:right_routes/utils/responsive_ext.dart';
 
 /// ═══════════════════════════════════════════════════════════
-/// OtpVerificationScreen — StatefulWidget
+/// GetStartedSignInScreen — StatefulWidget
 /// Using StatefulWidget to keep PinCodeTextField stable
 /// across orientation changes (prevents TextEditingController
 /// disposed error from pin_code_fields package).
 /// ═══════════════════════════════════════════════════════════
-class OtpVerificationScreen extends StatefulWidget {
-  const OtpVerificationScreen({super.key});
+class GetStartedSignInScreen extends StatefulWidget {
+  const GetStartedSignInScreen({super.key});
 
   @override
-  State<OtpVerificationScreen> createState() => _OtpVerificationScreenState();
+  State<GetStartedSignInScreen> createState() => _GetStartedSignInScreenState();
 }
 
-class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
-  late OtpVerificationController controller;
+class _GetStartedSignInScreenState extends State<GetStartedSignInScreen> {
+  late GetStartedSignInController controller;
 
   @override
   void initState() {
     super.initState();
-    controller = Get.find<OtpVerificationController>();
+    controller = Get.put(GetStartedSignInController());
   }
 
   @override
@@ -62,7 +62,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
   Widget _buildPortrait(BuildContext context) {
     return Column(
       children: [
-        SizedBox(height: context.h(40)),
+        SizedBox(height: context.h(20)),
         Center(
           child: Container(
             width: context.w(225),
@@ -132,7 +132,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(height: context.h(21)),
+        SizedBox(height: context.h(20)),
 
         /// TITLE
         Text(
@@ -148,109 +148,150 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
         SizedBox(height: context.h(21)),
 
-        /// SUBTITLE WITH EMAIL
-        Text.rich(
-          TextSpan(
-            children: [
-              TextSpan(
-                text:
-                    "We'll need you to verify your email address. We've sent a 6-digit code to ",
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: context.sp(18),
-                  fontFamily: 'Lato',
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              TextSpan(
-                text: controller.email,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: context.sp(18),
-                  fontFamily: 'Lato',
-                  fontWeight: FontWeight.bold,
-                  height: 1.44,
-                ),
-              ),
-              TextSpan(
-                text: ' The code expires in 15 minutes. Please enter it below.',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: context.sp(18),
-                  fontFamily: 'Lato',
-                  fontWeight: FontWeight.w500,
-                  height: 1.44,
-                ),
-              ),
-            ],
+        /// SUBTITLE
+        Text(
+          "We need you to verify your email address.\nEnter an email to send a 6-digit code to:",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: context.sp(18),
+            fontFamily: 'Lato',
+            fontWeight: FontWeight.w500,
+            height: 1.44,
           ),
         ),
 
-        SizedBox(height: context.h(28)),
+        SizedBox(height: context.h(15)),
+
+        /// EMAIL INPUT FIELD
+        Container(
+          height: context.h(50),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(context.r(5)),
+          ),
+          child: TextField(
+            controller: controller.emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: InputDecoration(
+              contentPadding: EdgeInsets.symmetric(
+                  horizontal: context.w(15), vertical: context.h(15)),
+              border: InputBorder.none,
+              hintText: 'Email',
+              hintStyle: TextStyle(
+                color: Colors.grey,
+                fontSize: context.sp(16),
+              ),
+            ),
+            style: TextStyle(
+              color: Colors.black,
+              fontSize: context.sp(18),
+            ),
+          ),
+        ),
+
+        SizedBox(height: context.h(15)),
+
+        /// SEND CODE BUTTON
+        Obx(
+          () => CustomButton(
+            text: controller.isSendingCode.value ? 'Sending...' : 'Send Code',
+            width: context.w(120),
+            height: context.h(40),
+            backgroundColor: controller.isEmailValid.value
+                ? AppColors.orange
+                : AppColors.medGray,
+            fontSize: 16,
+            onPressed:
+                controller.isEmailValid.value && !controller.isSendingCode.value
+                    ? () {
+                        controller.sendCode();
+                      }
+                    : null,
+            showSpinner: false,
+          ),
+        ),
+
+        SizedBox(height: context.h(25)),
+
+        /// INSTRUCTIONS FOR CODE
+        Text(
+          "The code expires in 4 minutes. Please enter code below.",
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: context.sp(18),
+            fontFamily: 'Lato',
+            fontWeight: FontWeight.w500,
+            height: 1.44,
+          ),
+        ),
+
+        SizedBox(height: context.h(20)),
 
         /// PIN CODE FIELD — Obx+ValueKey so orientation rebuilds don't dispose controllers
         Obx(() => Builder(
-          key: ValueKey('pin_${controller.pinResetKey.value}'),
-          builder: (ctx) {
-            final orientation = MediaQuery.of(ctx).orientation;
-            final screenW = MediaQuery.of(ctx).size.width;
-            final availableW = orientation == Orientation.landscape
-                ? (screenW * 0.68) - 40
-                : screenW - 30;
-            final boxW = ((availableW / 6) - 4).clamp(40.0, 59.0);
-            final boxH = boxW.clamp(40.0, 59.0);
+              key: ValueKey('pin_${controller.pinResetKey.value}'),
+              builder: (ctx) {
+                final orientation = MediaQuery.of(ctx).orientation;
+                final screenW = MediaQuery.of(ctx).size.width;
+                final availableW = orientation == Orientation.landscape
+                    ? (screenW * 0.68) - 40
+                    : screenW - 30;
+                final boxW = ((availableW / 6) - 4).clamp(40.0, 59.0);
+                final boxH = boxW.clamp(40.0, 59.0);
 
-            return PinCodeTextField(
-              length: 6,
-              appContext: ctx,
-              // No external controller — pin_code_fields manages internally
-              animationType: AnimationType.fade,
-              keyboardType: TextInputType.number,
-              obscureText: false,
-              cursorColor: Colors.black,
-              textStyle: TextStyle(
-                color: Colors.black,
-                fontSize: context.sp(20),
-                fontWeight: FontWeight.bold,
-              ),
-              pinTheme: PinTheme(
-                shape: PinCodeFieldShape.box,
-                borderRadius: BorderRadius.circular(5),
-                fieldHeight: boxH,
-                fieldWidth: boxW,
-                inactiveColor: Colors.transparent,
-                selectedColor: AppColors.orange,
-                activeColor: Colors.white,
-                inactiveFillColor: AppColors.medGray,
-                activeFillColor: Colors.white.withValues(alpha: 0.85),
-                selectedFillColor: Colors.white,
-              ),
-              enableActiveFill: true,
-              onChanged: controller.onOtpChanged,
-              onCompleted: (value) {
-                // Auto verify when 6 digits entered
-                controller.verifyOtp();
+                return PinCodeTextField(
+                  length: 6,
+                  appContext: ctx,
+                  // No external controller — pin_code_fields manages internally
+                  animationType: AnimationType.fade,
+                  keyboardType: TextInputType.number,
+                  obscureText: false,
+                  cursorColor: Colors.black,
+                  textStyle: TextStyle(
+                    color: Colors.black,
+                    fontSize: context.sp(20),
+                    fontWeight: FontWeight.bold,
+                  ),
+                  pinTheme: PinTheme(
+                    shape: PinCodeFieldShape.box,
+                    borderRadius: BorderRadius.circular(5),
+                    fieldHeight: boxH,
+                    fieldWidth: boxW,
+                    inactiveColor: Colors.transparent,
+                    selectedColor: AppColors.orange,
+                    activeColor: Colors.white,
+                    inactiveFillColor: AppColors.medGray,
+                    activeFillColor: Colors.white.withValues(alpha: 0.85),
+                    selectedFillColor: Colors.white,
+                  ),
+                  enableActiveFill: true,
+                  onChanged: controller.onOtpChanged,
+                  onCompleted: (value) {
+                    controller.verifyCode();
+                  },
+                );
               },
-            );
-          },
-        )),
+            )),
 
         SizedBox(height: context.h(18)),
 
         /// CONTINUE BUTTON
         Obx(
-          () => CustomButton(
-            text: controller.isVerifying.value ? 'LOADING...' : 'CONTINUE',
-            onPressed: controller.isVerifying.value
-                ? null
-                : () {
-                    // ✅ Call verify OTP API
-                    controller.verifyOtp();
-                  },
-            isLoading: controller.isVerifying.value,
-            showSpinner: false,
-            height: context.h(58),
-          ),
+          () {
+            bool isActive = controller.otp.value.length == 6;
+            return CustomButton(
+              text: controller.isVerifying.value ? 'LOADING...' : 'CONTINUE',
+              backgroundColor: isActive ? AppColors.orange : AppColors.medGray,
+              onPressed: isActive && !controller.isVerifying.value
+                  ? () {
+                      controller.verifyCode();
+                    }
+                  : null,
+              isLoading: controller.isVerifying.value,
+              showSpinner: false,
+              height: context.h(58),
+            );
+          },
         ),
 
         SizedBox(height: context.h(29)),
@@ -265,7 +306,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
           height: context.h(55),
         ),
 
-        SizedBox(height: context.h(53)),
+        SizedBox(height: context.h(50)),
 
         /// RESEND OTP
         Obx(
@@ -273,7 +314,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             text: TextSpan(
               children: [
                 TextSpan(
-                  text: "Didn't receive the mail? Check your spam folder or ",
+                  text: "Didn't receive the email? Check your spam folder or ",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: context.sp(15),
@@ -283,7 +324,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   ),
                 ),
                 TextSpan(
-                  text: controller.isResending.value ? "Sending..." : "Resend",
+                  text: controller.isResending.value ? "Sending..." : "resend",
                   style: TextStyle(
                     color: controller.isResending.value
                         ? AppColors.purple.withValues(alpha: 0.5)
@@ -297,7 +338,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     ..onTap = controller.isResending.value
                         ? null
                         : () {
-                            controller.resendOtp();
+                            controller.resendCode();
                           },
                 ),
               ],

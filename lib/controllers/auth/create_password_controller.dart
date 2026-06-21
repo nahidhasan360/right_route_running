@@ -144,6 +144,7 @@ class CreatePasswordController extends GetxController {
 
         Get.toNamed(AppRoutes.otpVerificationScreen, arguments: {
           'email': email.value,
+          'purpose': 'REGISTER',
           'nextRoute': AppRoutes.loginAccount,
         });
       } else {

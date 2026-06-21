@@ -83,7 +83,7 @@ class LoginController extends GetxController {
     isSendingOtp.value = true;
 
     try {
-      final result = await _apiService.sendOtp(email: userEmail.value);
+      final result = await _apiService.sendOtp(email: userEmail.value, purpose: 'LOGIN');
 
       if (result['success'] == true) {
         _showSuccess(result['message'] ?? 'OTP sent to your email');
@@ -91,7 +91,11 @@ class LoginController extends GetxController {
 
         Get.toNamed(
           AppRoutes.otpVerificationScreen,
-          arguments: {'email': userEmail.value, 'nextRoute': AppRoutes.weLoggedYou},
+          arguments: {
+            'email': userEmail.value, 
+            'purpose': 'LOGIN', 
+            'nextRoute': AppRoutes.weLoggedYou,
+          },
         );
       } else {
         _showError(result['message'] ?? 'Failed to send OTP');
@@ -124,20 +128,67 @@ class LoginController extends GetxController {
       );
 
       if (result['success'] == true) {
-        final data = result['data'];
+        final rawData = result['data'];
+        final data = rawData['data'] ?? rawData;
+        
+        // Save tokens
+        if (data['access'] != null) {
+          await AuthService.saveAccessToken(data['access']);
+        }
+        if (data['refresh'] != null) {
+          await AuthService.saveRefreshToken(data['refresh']);
+        }
+
+        // Save user data
+        if (data['user'] != null) {
+          final user = data['user'];
+          if (user['email'] != null) {
+            await AuthService.saveUserEmail(user['email']);
+          }
+          if (user['name'] != null) {
+            await AuthService.saveUserName(user['name']);
+          }
+          if (user['id'] != null) {
+            await AuthService.saveUserId(user['id'].toString());
+          }
+        }
+
+        await AuthService.saveLoginStatus(true);
         await AuthService.saveUserEmail(userEmail.value);
 
-        _showSuccess(data['detail'] ?? 'OTP sent to your email');
+        _showSuccess(rawData['detail'] ?? 'Login successful!');
 
-        Get.toNamed(
-          AppRoutes.otpVerificationScreen,
-          arguments: {'email': userEmail.value, 'nextRoute': AppRoutes.weLoggedYou},
-        );
+        await fetchUserInfoAndRoute();
       } else {
         _showError(result['message'] ?? 'Login failed');
       }
     } catch (e) {
       _showError('Connection failed. Please try again.');
+    } finally {
+      isLoading.value = false;
+    }
+  }
+
+  // ─── FETCH USER INFO & ROUTE ──────────────────────────────
+  Future<void> fetchUserInfoAndRoute() async {
+    isLoading.value = true;
+    try {
+      final userInfoResponse = await _apiService.getUserInfo();
+      if (userInfoResponse['success'] == true) {
+        final planType = userInfoResponse['data']['current_plan_type'];
+        
+        // Business Owner goes to Team Manager, others go to Create Route (Homescreen)
+        if (planType == 'BUSINESS_OWNER' || planType == 'TEAM_OWNER') {
+          Get.offAllNamed(AppRoutes.teamManager);
+        } else {
+          Get.offAllNamed(AppRoutes.homeScreen);
+        }
+      } else {
+        // Fallback
+        Get.offAllNamed(AppRoutes.homeScreen);
+      }
+    } catch (e) {
+      Get.offAllNamed(AppRoutes.homeScreen);
     } finally {
       isLoading.value = false;
     }

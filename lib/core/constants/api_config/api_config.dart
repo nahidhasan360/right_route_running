@@ -40,7 +40,9 @@ class ApiConfig {
   static const String registerEndpoint = '/auth/register/';
   static const String profileEndpoint = '/auth/profile/';
   static const String requestOtpEndpoint = '/auth/request-otp/';
+  static const String resendOtpEndpoint = '/auth/resend-otp/';
   static const String verifyOtpEndpoint = '/auth/verify-otp/';
+  static const String userInfoEndpoint = '/userinfo/';
   static const String changeEmailEndpoint = '/auth/change-email/';
   static const String changePasswordEndpoint = '/auth/change-password/';
   static const String verifyTokenEndpoint = '/auth/verify-token/';
@@ -59,7 +61,9 @@ class ApiConfig {
   static String get fullProfileUrl => '$baseUrl$profileEndpoint';
   static String get fullCheckEmailUrl => '$baseUrl$checkEmailEndpoint';
   static String get fullRequestOtpUrl => '$baseUrl$requestOtpEndpoint';
+  static String get fullResendOtpUrl => '$baseUrl$resendOtpEndpoint';
   static String get fullVerifyOtpUrl => '$baseUrl$verifyOtpEndpoint';
+  static String get fullUserInfoUrl => '$baseUrl$userInfoEndpoint';
   static String get fullChangeEmailUrl => '$baseUrl$changeEmailEndpoint';
   static String get fullChangePasswordUrl => '$baseUrl$changePasswordEndpoint';
   static String get fullVerifyTokenUrl => '$baseUrl$verifyTokenEndpoint';
