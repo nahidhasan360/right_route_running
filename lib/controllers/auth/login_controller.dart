@@ -35,6 +35,20 @@ class LoginController extends GetxController {
     initializeBiometrics();
   }
 
+  /// Called after biometrics are initialized — auto-trigger if Touch ID enabled
+  Future<void> _tryAutoTriggerBiometric() async {
+    // Small delay to let UI settle before showing prompt
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (isTouchIDEnabled.value &&
+        availableBiometrics.isNotEmpty &&
+        canCheckBiometrics.value) {
+      final savedPassword = await AuthService.getUserPassword();
+      if (savedPassword != null && savedPassword.isNotEmpty) {
+        await authenticateWithBiometrics();
+      }
+    }
+  }
+
   Future<void> _loadUserData() async {
     final args = Get.arguments;
     if (args != null) {
@@ -51,6 +65,9 @@ class LoginController extends GetxController {
       final savedToken = await AuthService.getEmailToken();
       if (savedToken != null) emailToken.value = savedToken;
     }
+
+    // Load Touch ID preference
+    isTouchIDEnabled.value = AuthService.getTouchIDEnabled();
   }
 
   // ─── EMAIL MANAGEMENT ─────────────────────────────────────
@@ -71,6 +88,7 @@ class LoginController extends GetxController {
   // ─── TOUCH ID TOGGLE ─────────────────────────────────────
   void toggleTouchID(bool value) {
     isTouchIDEnabled.value = value;
+    AuthService.saveTouchIDEnabled(value); // Save the state
   }
 
   // ─── SEND OTP & NAVIGATE (Trouble Login) ──────────────────
@@ -156,6 +174,12 @@ class LoginController extends GetxController {
         await AuthService.saveLoginStatus(true);
         await AuthService.saveUserEmail(userEmail.value);
 
+        // Only save password if Touch ID is enabled (or we can always save it for biometric to work)
+        // Since biometric uses local device security, it is safe to save it securely when enabled.
+        if (isTouchIDEnabled.value) {
+          await AuthService.saveUserPassword(passwordController.text.trim());
+        }
+
         _showSuccess(rawData['detail'] ?? 'Login successful!');
 
         await fetchUserInfoAndRoute();
@@ -198,6 +222,8 @@ class LoginController extends GetxController {
   Future<void> initializeBiometrics() async {
     await checkBiometricSupport();
     await checkAvailableBiometrics();
+    // Auto-trigger fingerprint prompt if Touch ID was previously enabled
+    await _tryAutoTriggerBiometric();
   }
 
   Future<void> checkBiometricSupport() async {
@@ -221,6 +247,12 @@ class LoginController extends GetxController {
 
   Future<bool> authenticateWithBiometrics() async {
     try {
+      // Check if Touch ID was enabled by user first
+      if (!isTouchIDEnabled.value) {
+        _showWarning('Please enable Touch ID by logging in with your password first.');
+        return false;
+      }
+
       if (!canCheckBiometrics.value) {
         _showError('Biometric not available on this device');
         return false;
@@ -242,10 +274,17 @@ class LoginController extends GetxController {
       );
 
       if (didAuthenticate) {
-        _showSuccess('Authentication successful!');
-        await Future.delayed(const Duration(milliseconds: 800));
-        await login();
-        return true;
+        final savedPassword = await AuthService.getUserPassword();
+        if (savedPassword != null && savedPassword.isNotEmpty) {
+          passwordController.text = savedPassword;
+          _showSuccess('Authentication successful!');
+          await Future.delayed(const Duration(milliseconds: 800));
+          await login();
+          return true;
+        } else {
+          _showError('No saved password found. Please login normally first.');
+          return false;
+        }
       } else {
         _showError('Authentication failed. Please try again.');
         return false;

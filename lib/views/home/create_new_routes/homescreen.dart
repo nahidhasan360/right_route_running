@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
-import 'package:right_routes/core/routes/all_routes.dart';
 import 'package:right_routes/global_widgets/custom_buttons.dart';
 import 'package:right_routes/utils/colors.dart';
 import 'package:right_routes/utils/responsive_ext.dart';
@@ -17,12 +16,26 @@ import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 
-class Homescreen extends StatelessWidget {
-  Homescreen({super.key});
+class Homescreen extends StatefulWidget {
+  const Homescreen({super.key});
 
-  final HomeController _ctrl = Get.isRegistered<HomeController>()
-      ? Get.find<HomeController>()
-      : Get.put(HomeController(), permanent: true);
+  @override
+  State<Homescreen> createState() => _HomescreenState();
+}
+
+class _HomescreenState extends State<Homescreen> {
+  late final HomeController _ctrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = Get.isRegistered<HomeController>()
+        ? Get.find<HomeController>()
+        : Get.put(HomeController(), permanent: true);
+    
+    // Clear old data so previous route's start point doesn't auto-draw
+    _ctrl.resetNewRouteData();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,25 +64,6 @@ class Homescreen extends StatelessWidget {
                   : _buildPortraitLayout(context),
             ),
           ),
-          Obx(() {
-            if (_ctrl.isCreating.value) {
-              return Container(
-                color: Colors.black.withOpacity(0.7),
-                child: const Center(
-                  child: Text(
-                    'Loading .....',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 30,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                ),
-              );
-            }
-            return const SizedBox.shrink();
-          }),
         ],
       ),
     );
@@ -282,7 +276,14 @@ class Homescreen extends StatelessWidget {
             padding: EdgeInsets.only(right: context.w(6)),
             child: GestureDetector(
               onTap: () {
-                // TODO: Implement mic action
+                _showMicDialog(context, title: 'Route Name (Voice)', onDone: (text) {
+                  if (text.isNotEmpty) {
+                    _ctrl.routeNameController.text = text;
+                    Get.snackbar('Success', 'Route name updated from voice', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+                  } else {
+                    Get.snackbar('Warning', 'No voice text captured', backgroundColor: Colors.orange, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+                  }
+                });
               },
               child: Container(
                 width: context.w(20),
@@ -306,98 +307,96 @@ class Homescreen extends StatelessWidget {
 
   Widget _buildPermitTitle(BuildContext context) {
     return Center(
-      child: Obx(() => Text(
-            'Permit ${_ctrl.currentPermitIndex.value}',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: context.sp(20),
-              fontFamily: 'Lato',
-              fontWeight: FontWeight.w700,
-            ),
-          )),
+      child: Text(
+        'Permit 1',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: context.sp(20),
+          fontFamily: 'Lato',
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 
   Widget _buildStep1Label(BuildContext context) {
-    return Obx(() => Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Step 1: ',
-              style: TextStyle(
-                color: AppColors.orange,
-                fontSize: context.sp(19),
-                fontFamily: 'Lato',
-                fontWeight: FontWeight.w700,
-              ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Step 1: ',
+          style: TextStyle(
+            color: AppColors.orange,
+            fontSize: context.sp(19),
+            fontFamily: 'Lato',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Flexible(
+          child: Text(
+            'Set your Start & End Points',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: context.sp(18),
+              fontFamily: 'Lato',
+              fontWeight: FontWeight.w700,
             ),
-            Flexible(
-              child: Text(
-                _ctrl.currentPermitIndex.value > 1
-                    ? 'Set your End Point'
-                    : 'Set your Start & End Points',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: context.sp(18),
-                  fontFamily: 'Lato',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+          ),
+        ),
+        SizedBox(width: context.w(6)),
+        Padding(
+          padding: EdgeInsets.only(top: context.h(2)),
+          child: GestureDetector(
+            onTap: () => dialogMap(context),
+            child: SvgPicture.asset(
+              'assets/icons/Question-Box-gray.svg',
+              width: context.w(20),
+              height: context.h(20),
             ),
-            SizedBox(width: context.w(6)),
-            Padding(
-              padding: EdgeInsets.only(top: context.h(2)),
-              child: GestureDetector(
-                onTap: () => dialogMap(context),
-                child: SvgPicture.asset(
-                  'assets/icons/Question-Box-gray.svg',
-                  width: context.w(20),
-                  height: context.h(20),
-                ),
-              ),
-            ),
-          ],
-        ));
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildStep2Label(BuildContext context) {
-    return Obx(() => Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Step 2: ',
-              style: TextStyle(
-                color: AppColors.orange,
-                fontSize: context.sp(19),
-                fontFamily: 'Lato',
-                fontWeight: FontWeight.w700,
-              ),
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Step 2: ',
+          style: TextStyle(
+            color: AppColors.orange,
+            fontSize: context.sp(19),
+            fontFamily: 'Lato',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Flexible(
+          child: Text(
+            'Import Permit 1',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: context.sp(18),
+              fontFamily: 'Lato',
+              fontWeight: FontWeight.w700,
             ),
-            Flexible(
-              child: Text(
-                'Import Permit ${_ctrl.currentPermitIndex.value}',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: context.sp(18),
-                  fontFamily: 'Lato',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+          ),
+        ),
+        SizedBox(width: context.w(6)),
+        Padding(
+          padding: EdgeInsets.only(top: context.h(2)),
+          child: GestureDetector(
+            onTap: () => showPermitDialog(context),
+            child: SvgPicture.asset(
+              'assets/icons/Question-Box-gray.svg',
+              width: context.w(20),
+              height: context.h(20),
             ),
-            SizedBox(width: context.w(6)),
-            Padding(
-              padding: EdgeInsets.only(top: context.h(2)),
-              child: GestureDetector(
-                onTap: () => showPermitDialog(context),
-                child: SvgPicture.asset(
-                  'assets/icons/Question-Box-gray.svg',
-                  width: context.w(20),
-                  height: context.h(20),
-                ),
-              ),
-            ),
-          ],
-        ));
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildActionButtonsRow(BuildContext context) {
@@ -413,10 +412,21 @@ class Homescreen extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildActionButton(context, SvgManager.importWhite, finalWidth, _pickFile),
-              _buildActionButton(context, SvgManager.editPencilWhite, finalWidth, () => _showEditDialog(context)),
-              _buildActionButton(context, SvgManager.micWhite, finalWidth, () => _showMicDialog(context)),
-              _buildActionButton(context, SvgManager.cameraWhite, finalWidth, _takePhoto),
+              _buildActionButton(context, SvgManager.importWhite, finalWidth, _pickFile, 'import'),
+              _buildActionButton(context, SvgManager.editPencilWhite, finalWidth, () => _showEditDialog(context), 'edit'),
+              _buildActionButton(context, SvgManager.micWhite, finalWidth, () {
+                _showMicDialog(context, title: 'Permit Text (Voice)', onDone: (text) {
+                  if (text.isNotEmpty) {
+                    _ctrl.permitText.value = text;
+                    _ctrl.permitFile.value = null;
+                    _ctrl.activeAction.value = 'mic';
+                    Get.snackbar('Success', 'Voice text saved', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+                  } else {
+                    Get.snackbar('Warning', 'No voice text captured', backgroundColor: Colors.orange, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+                  }
+                });
+              }, 'mic'),
+              _buildActionButton(context, SvgManager.cameraWhite, finalWidth, _takePhoto, 'camera'),
             ],
           ),
         ),
@@ -431,7 +441,9 @@ class Homescreen extends StatelessWidget {
     );
     if (result != null && result.files.single.path != null) {
       _ctrl.permitFile.value = File(result.files.single.path!);
-      Get.snackbar('Success', 'File attached successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+      _ctrl.permitText.value = '';
+      _ctrl.activeAction.value = 'import';
+      Get.snackbar('Success', 'File attached successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
     }
   }
 
@@ -440,7 +452,9 @@ class Homescreen extends StatelessWidget {
     final XFile? image = await picker.pickImage(source: ImageSource.camera);
     if (image != null) {
       _ctrl.permitFile.value = File(image.path);
-      Get.snackbar('Success', 'Photo attached successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+      _ctrl.permitText.value = '';
+      _ctrl.activeAction.value = 'camera';
+      Get.snackbar('Success', 'Photo attached successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
     }
   }
 
@@ -448,7 +462,7 @@ class Homescreen extends StatelessWidget {
     TextEditingController textController = TextEditingController(text: _ctrl.permitText.value);
     Get.dialog(
       AlertDialog(
-        backgroundColor: const Color(0xFF0B1129),
+        backgroundColor: AppColors.darkGray,
         title: const Text('Edit Permit Text', style: TextStyle(color: Colors.white)),
         content: TextField(
           controller: textController,
@@ -457,15 +471,23 @@ class Homescreen extends StatelessWidget {
             hintText: 'Type your permit text...',
             hintStyle: TextStyle(color: Colors.white54),
           ),
-          maxLines: 3,
+          minLines: 1,
+          maxLines: null,
+          keyboardType: TextInputType.multiline,
         ),
         actions: [
           TextButton(onPressed: () => Get.back(), child: const Text('Cancel', style: TextStyle(color: Colors.white))),
           TextButton(
             onPressed: () {
               _ctrl.permitText.value = textController.text;
+              if (textController.text.isNotEmpty) {
+                _ctrl.permitFile.value = null;
+                _ctrl.activeAction.value = 'edit';
+              } else if (_ctrl.permitFile.value == null) {
+                _ctrl.activeAction.value = '';
+              }
               Get.back();
-              Get.snackbar('Success', 'Text saved successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+              Get.snackbar('Success', 'Text saved successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
             }, 
             child: Text('Done', style: TextStyle(color: AppColors.orange))
           ),
@@ -474,15 +496,15 @@ class Homescreen extends StatelessWidget {
     );
   }
 
-  void _showMicDialog(BuildContext context) {
+  void _showMicDialog(BuildContext context, {required String title, required Function(String) onDone}) {
     stt.SpeechToText speech = stt.SpeechToText();
     RxBool isListening = false.obs;
-    RxString spokenText = _ctrl.permitText.value.obs;
+    RxString spokenText = ''.obs;
 
     Get.dialog(
       AlertDialog(
-        backgroundColor: const Color(0xFF0B1129),
-        title: const Text('Voice to Text', style: TextStyle(color: Colors.white)),
+        backgroundColor: AppColors.darkGray,
+        title: Text(title, style: const TextStyle(color: Colors.white)),
         content: Obx(() => Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -499,7 +521,7 @@ class Homescreen extends StatelessWidget {
                       spokenText.value = val.recognizedWords;
                     });
                   } else {
-                    Get.snackbar('Error', 'Microphone permission denied', backgroundColor: Colors.red, colorText: Colors.white);
+                    Get.snackbar('Error', 'Microphone permission denied', backgroundColor: Colors.red, colorText: Colors.white, duration: const Duration(seconds: 1));
                   }
                 } else {
                   isListening.value = false;
@@ -522,11 +544,10 @@ class Homescreen extends StatelessWidget {
           TextButton(
             onPressed: () {
               speech.stop();
-              _ctrl.permitText.value = spokenText.value;
               Get.back();
-              Get.snackbar('Success', 'Voice text saved', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+              onDone(spokenText.value);
             }, 
-            child: Text('Done', style: TextStyle(color: AppColors.orange))
+            child: const Text('Done', style: TextStyle(color: AppColors.orange))
           ),
         ],
       )
@@ -535,29 +556,33 @@ class Homescreen extends StatelessWidget {
 
   Widget _buildContinueButton(BuildContext context) {
     return Center(
-      child: CustomButton(
-        text: 'CONTINUE',
-        width: context.w(150),
+      child: Obx(() => CustomButton(
+        text: _ctrl.isCreating.value ? 'Loading...' : 'CONTINUE',
+        width: _ctrl.isCreating.value ? context.w(160) : context.w(150),
         height: context.h(50),
-        fontSize: context.sp(26),
+        fontSize: _ctrl.isCreating.value ? context.sp(22) : context.sp(26),
         backgroundColor: AppColors.orange,
         borderRadius: 13,
-        onPressed: () {
-          _ctrl.submitCreateRoute();
-        },
-      ),
+        onPressed: _ctrl.isCreating.value 
+          ? () {} 
+          : () {
+              _ctrl.submitCreateRoute();
+            },
+      )),
     );
   }
 
   Widget _buildActionButton(
-      BuildContext context, String svgPath, double width, VoidCallback onTap) {
-    return GestureDetector(
+      BuildContext context, String svgPath, double width, VoidCallback onTap, String actionType) {
+    return Obx(() => GestureDetector(
       onTap: onTap,
       child: Container(
         width: width,
         height: context.h(46),
         decoration: BoxDecoration(
-          color: AppColors.orange,
+          color: _ctrl.activeAction.value == actionType 
+              ? AppColors.orange.withOpacity(0.5) // Darker / "pressed" appearance
+              : AppColors.orange,
           borderRadius: BorderRadius.circular(context.r(9)),
         ),
         child: Center(
@@ -572,6 +597,6 @@ class Homescreen extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 }

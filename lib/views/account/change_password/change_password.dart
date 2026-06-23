@@ -50,7 +50,7 @@ class ChangePassword extends StatelessWidget {
           children: [
             SizedBox(height: context.h(20)),
             _buildLogo(context),
-            SizedBox(height: context.h(39)),
+           SizedBox(height: context.h(20)),
             _buildFormContent(context),
           ],
         ),
@@ -463,7 +463,7 @@ class ChangePasswordController extends GetxController {
           snackPosition: SnackPosition.BOTTOM,
           duration: const Duration(seconds: 2));
       await Future.delayed(const Duration(milliseconds: 500));
-      Get.toNamed(AppRoutes.passwordSaved);
+      Get.offNamed(AppRoutes.passwordSaved);
     } else {
       Get.snackbar('Error', result['message'],
           backgroundColor: Colors.red,

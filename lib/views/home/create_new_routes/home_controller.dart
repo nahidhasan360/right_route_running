@@ -21,6 +21,28 @@ class DraftRouteModel {
 
 // ─── Service ─────────────────────────────────────────────────────────────────
 class CreateRouteService {
+  static String _parseDioError(dynamic errBody) {
+    if (errBody is Map) {
+      if (errBody['message'] != null) {
+        return errBody['message'].toString();
+      } else if (errBody['detail'] != null) {
+        final detail = errBody['detail'];
+        if (detail is String) {
+          return detail;
+        } else if (detail is Map && detail.isNotEmpty) {
+          final firstKey = detail.keys.first;
+          final firstVal = detail[firstKey];
+          if (firstVal is List && firstVal.isNotEmpty) {
+            return '$firstKey: ${firstVal[0]}';
+          }
+          return '$firstKey: $firstVal';
+        } else {
+          return detail.toString();
+        }
+      }
+    }
+    return 'Server error';
+  }
   static Future<Map<String, dynamic>> createRoute({
     required String name,
     required String startLocation,
@@ -88,11 +110,10 @@ class CreateRouteService {
       debugPrint('❌ [CreateRoute] Error: $e');
       if (e is DioException) {
         final errBody = e.response?.data;
-        final errMsg = (errBody is Map) ? (errBody['message'] ?? errBody['detail'] ?? 'Server error') : 'Server error';
         return {
           'success': false,
           'statusCode': e.response?.statusCode,
-          'message': errMsg,
+          'message': _parseDioError(errBody),
         };
       }
       return {'success': false, 'message': 'Network error. Please try again.'};
@@ -141,14 +162,86 @@ class CreateRouteService {
       debugPrint('❌ [UpdateRouteName] Error: $e');
       if (e is DioException) {
         final errBody = e.response?.data;
-        final errMsg = (errBody is Map) ? (errBody['message'] ?? errBody['detail'] ?? 'Server error') : 'Server error';
         return {
           'success': false,
           'statusCode': e.response?.statusCode,
-          'message': errMsg,
+          'message': _parseDioError(errBody),
         };
       }
       return {'success': false, 'message': 'Network error. Please try again.'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> fetchPermitStartingPoint(String routeId) async {
+    try {
+      final url = Uri.parse('${HomeApiConstant.baseUrl}${HomeApiConstant.routePost}$routeId${HomeApiConstant.permitStartingPoint}');
+      final response = await ApiClient.get(url);
+      if (response.statusCode == 200 && response.data['status'] == true) {
+        return {
+          'success': true,
+          'data': response.data['data'],
+        };
+      }
+      return {'success': false, 'message': 'Failed to fetch starting point'};
+    } catch (e) {
+      return {'success': false, 'message': 'Network error'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> createSubsequentPermit({
+    required String routeId,
+    required String startLocation,
+    required String startLatitude,
+    required String startLongitude,
+    required String endLocation,
+    required String endLatitude,
+    required String endLongitude,
+    required String permitText,
+    File? permitFile,
+  }) async {
+    try {
+      final url = Uri.parse('${HomeApiConstant.baseUrl}${HomeApiConstant.routePost}$routeId${HomeApiConstant.routePermit}');
+      
+      Map<String, dynamic> dataMap = {
+        'start_location': startLocation,
+        'start_latitude': startLatitude,
+        'start_longitude': startLongitude,
+        'end_location': endLocation,
+        'end_latitude': endLatitude,
+        'end_longitude': endLongitude,
+        'permit_text': permitText,
+      };
+
+      if (permitFile != null) {
+        dataMap['permit_file'] = await MultipartFile.fromFile(
+          permitFile.path,
+          filename: permitFile.path.split('/').last,
+        );
+      }
+
+      FormData formData = FormData.fromMap(dataMap);
+
+      final response = await ApiClient.sendMultipartRequest(
+        url,
+        data: formData,
+        method: 'POST',
+      );
+
+      final body = response.data is String ? jsonDecode(response.data) : response.data;
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return {
+          'success': true,
+          'message': body['message'] ?? 'Permit created successfully',
+        };
+      } else {
+        return {
+          'success': false,
+          'message': body['message'] ?? 'Failed to create permit',
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': 'Network error'};
     }
   }
 }
@@ -171,6 +264,7 @@ class HomeController extends GetxController {
   
   final RxString permitText = ''.obs;
   final Rx<File?> permitFile = Rx<File?>(null);
+  final RxString activeAction = ''.obs;
 
   final RxList<DraftRouteModel> draftRoutes = <DraftRouteModel>[
     const DraftRouteModel(
@@ -192,21 +286,40 @@ class HomeController extends GetxController {
     isCreating.value = false;
   }
 
+  void resetNewRouteData() {
+    routeNameController.clear();
+    startLocation.value = '';
+    startLat.value = '';
+    startLng.value = '';
+    endLocation.value = '';
+    endLat.value = '';
+    endLng.value = '';
+    permitText.value = '';
+    permitFile.value = null;
+    errorMsg.value = '';
+    isCreating.value = false;
+  }
+
   Future<void> submitCreateRoute() async {
     final name = routeNameController.text.trim();
     if (name.isEmpty) {
       errorMsg.value = 'Route name is required';
-      Get.snackbar('Validation Error', errorMsg.value, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Error', errorMsg.value, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
       return;
     }
     if (startLat.value.isEmpty || startLng.value.isEmpty) {
-      errorMsg.value = 'Start location is required (Tap on the map)';
-      Get.snackbar('Validation Error', errorMsg.value, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+      errorMsg.value = 'Start location is required';
+      Get.snackbar('Error', errorMsg.value, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
       return;
     }
     if (endLat.value.isEmpty || endLng.value.isEmpty) {
-      errorMsg.value = 'End location is required (Tap on the map again)';
-      Get.snackbar('Validation Error', errorMsg.value, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+      errorMsg.value = 'End location is required';
+      Get.snackbar('Error', errorMsg.value, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+      return;
+    }
+    if (permitText.value.isEmpty && permitFile.value == null) {
+      errorMsg.value = 'Document is required';
+      Get.snackbar('Error', errorMsg.value, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
       return;
     }
 
@@ -229,7 +342,7 @@ class HomeController extends GetxController {
     isCreating.value = false;
 
     if (result['success'] == true) {
-      Get.snackbar('Success', result['message'] ?? 'Route created successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Success', result['message'] ?? 'Route created successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
       Get.toNamed(
         AppRoutes.confirmYourRoutes, // Adjust as needed if the route changes
         arguments: {
@@ -243,7 +356,7 @@ class HomeController extends GetxController {
         msg = 'Error ${result['statusCode']}: $msg';
       }
       errorMsg.value = msg;
-      Get.snackbar('Error', msg, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 4));
+      Get.snackbar('Error', msg, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 2));
     }
   }
 
@@ -263,4 +376,6 @@ class HomeController extends GetxController {
       Get.snackbar('Error', msg, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 4));
     }
   }
+
+
 }

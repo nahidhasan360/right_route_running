@@ -41,6 +41,8 @@ Future<void> main() async {
   bool isLoggedIn = AuthService.isLoggedIn();
   String? token = await AuthService.getAccessToken();
   String? userEmail = AuthService.getUserEmail();
+  bool isTouchIDEnabled = AuthService.getTouchIDEnabled();
+  String? savedPassword = await AuthService.getUserPassword();
 
   print('');
   print('═══════════════════════════════════════════════════');
@@ -49,16 +51,28 @@ Future<void> main() async {
   print('📊 Login Status: $isLoggedIn');
   print('🔑 Has Access Token: ${token != null}');
   print('📧 User Email: ${userEmail ?? "No email"}');
+  print('👆 Touch ID Enabled: $isTouchIDEnabled');
+  print('🔐 Has Saved Password: ${savedPassword != null}');
   print('═══════════════════════════════════════════════════');
 
   String initialRoute;
 
   if (isLoggedIn && token != null && token.isNotEmpty) {
+    // Already fully logged in with valid token → go to home
     print('✅ Valid token found - Auto login to Home');
     initialRoute = AppRoutes.homeScreen;
+  } else if (isTouchIDEnabled &&
+      userEmail != null &&
+      userEmail.isNotEmpty &&
+      savedPassword != null &&
+      savedPassword.isNotEmpty) {
+    // Touch ID enabled + saved credentials → go to login screen
+    // The LoginController will auto-trigger biometric on init
+    print('👆 Touch ID enabled - Going to Login screen for biometric');
+    initialRoute = AppRoutes.loginAccount;
   } else {
     print('❌ No valid token - Going to splash/getStarted');
-    initialRoute = AppRoutes.splashScreen; // 🔥 FIXED: was homeScreen
+    initialRoute = AppRoutes.splashScreen;
   }
 
   print('═══════════════════════════════════════════════════');

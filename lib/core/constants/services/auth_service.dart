@@ -1,5 +1,6 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:get/get.dart';
 
 class AuthService {
   static SharedPreferences? _prefs;
@@ -62,6 +63,20 @@ class AuthService {
     print('🗑️ Clearing all tokens from Secure Storage');
     await _secureStorage.deleteAll();
     print('✅ All tokens cleared');
+  }
+
+  // Save User Password (Secure)
+  static Future<void> saveUserPassword(String password) async {
+    print('🔐 Saving User Password (Secure)');
+    await _secureStorage.write(key: 'user_password', value: password);
+    print('✅ User Password Saved');
+  }
+
+  // Get User Password
+  static Future<String?> getUserPassword() async {
+    final password = await _secureStorage.read(key: 'user_password');
+    print('📤 Getting User Password: ${password != null ? "Found" : "Not Found"}');
+    return password;
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -131,6 +146,23 @@ class AuthService {
     final phone = _prefs?.getString('user_phone');
     print('📤 Getting User Phone: $phone');
     return phone;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 🔐 TOUCH ID ENABLED
+  // ═══════════════════════════════════════════════════════════
+
+  // Save Touch ID Enabled State
+  static Future<bool> saveTouchIDEnabled(bool enabled) async {
+    print('💾 Saving Touch ID Enabled: $enabled');
+    return await _prefs?.setBool('touch_id_enabled', enabled) ?? false;
+  }
+
+  // Get Touch ID Enabled State
+  static bool getTouchIDEnabled() {
+    final enabled = _prefs?.getBool('touch_id_enabled') ?? false;
+    print('📤 Getting Touch ID Enabled: $enabled');
+    return enabled;
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -253,20 +285,51 @@ class AuthService {
   // 🚪 LOGOUT & CLEAR DATA
   // ═══════════════════════════════════════════════════════════
 
-  // Logout (Clear everything)
+  // Clear Only Auth Tokens (NOT password)
+  static Future<void> clearAuthTokens() async {
+    print('🗑️ Clearing auth tokens only (keeping saved password)');
+    await _secureStorage.delete(key: 'access_token');
+    await _secureStorage.delete(key: 'refresh_token');
+    await _secureStorage.delete(key: 'email_token');
+    print('✅ Auth tokens cleared');
+  }
+
+  // Logout (Clear everything EXCEPT Touch ID setting & saved password if enabled)
   static Future<void> logout() async {
     print('');
     print('═══════════════════════════════════════════════════');
     print('🚪 LOGGING OUT...');
     print('═══════════════════════════════════════════════════');
 
-    // Clear secure storage (tokens)
-    await clearAllTokens();
+    // Check if Touch ID was enabled before clearing
+    final bool touchIDEnabled = getTouchIDEnabled();
+    final String? savedEmail = getUserEmail();
 
-    // Clear SharedPreferences (user data)
+    // Clear secure auth tokens ONLY (keep saved password for biometric)
+    await clearAuthTokens();
+
+    // Clear SharedPreferences user data
     await _prefs?.clear();
 
-    print('✅ Logout Complete - All data cleared');
+    // If Touch ID was enabled: restore the settings so biometric works next login
+    if (touchIDEnabled) {
+      print('🔐 Touch ID enabled — restoring biometric settings after logout');
+      await saveTouchIDEnabled(true);
+      // Also restore the email so login screen shows the correct email
+      if (savedEmail != null && savedEmail.isNotEmpty) {
+        await saveUserEmail(savedEmail);
+      }
+    }
+
+    // Clear GetX memory cache (force delete all permanent controllers)
+    Get.deleteAll(force: true);
+
+    print('✅ Logout Complete');
+    if (touchIDEnabled) {
+      print('   Touch ID setting & password kept for biometric login');
+    } else {
+      print('   All data cleared');
+    }
     print('═══════════════════════════════════════════════════');
     print('');
   }
@@ -293,6 +356,7 @@ class AuthService {
     String? name,
     String? id,
     String? phone,
+    String? password,
     String? accessToken,
     String? refreshToken,
   }) async {
@@ -307,9 +371,10 @@ class AuthService {
     if (id != null) await saveUserId(id);
     if (phone != null) await saveUserPhone(phone);
 
-    // Save tokens securely
+    // Save tokens and password securely
     if (accessToken != null) await saveAccessToken(accessToken);
     if (refreshToken != null) await saveRefreshToken(refreshToken);
+    if (password != null) await saveUserPassword(password);
 
     // Set login status
     await saveLoginStatus(true);

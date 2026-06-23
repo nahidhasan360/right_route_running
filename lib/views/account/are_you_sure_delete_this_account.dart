@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:right_routes/controllers/account/account_delete_controller.dart';
 import 'package:right_routes/core/routes/all_routes.dart';
 import 'package:right_routes/global_widgets/button_reusable_short_width.dart';
 import 'package:right_routes/utils/responsive_ext.dart';
@@ -8,7 +9,10 @@ import '../../global_widgets/custom_navbar.dart';
 import '../../utils/colors.dart';
 
 class AreYouSureDeleteThisAccount extends StatelessWidget {
-  const AreYouSureDeleteThisAccount({super.key});
+  AreYouSureDeleteThisAccount({super.key});
+
+  final AccountDeleteController controller =
+      Get.put(AccountDeleteController());
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +137,7 @@ class AreYouSureDeleteThisAccount extends StatelessWidget {
             color: Colors.white,
             fontSize: context.sp(20),
             fontFamily: 'Lato',
-            fontWeight: FontWeight.w700,
+            fontWeight: FontWeight.w600,
             letterSpacing: 1,
           ),
         ),
@@ -160,7 +164,7 @@ class AreYouSureDeleteThisAccount extends StatelessWidget {
                   color: Colors.white,
                   fontSize: context.sp(20),
                   fontFamily: 'Lato',
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 1,
                 ),
               ),
@@ -171,7 +175,7 @@ class AreYouSureDeleteThisAccount extends StatelessWidget {
                   color: Colors.white,
                   fontSize: context.sp(20),
                   fontFamily: 'Lato',
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 1,
                 ),
               ),
@@ -202,7 +206,7 @@ class AreYouSureDeleteThisAccount extends StatelessWidget {
                   color: Colors.white,
                   fontSize: context.sp(18),
                   fontFamily: 'Lato',
-                  fontWeight: FontWeight.w700,
+                  fontWeight: FontWeight.w500,
                   letterSpacing: 1,
                 ),
               ),
@@ -212,10 +216,16 @@ class AreYouSureDeleteThisAccount extends StatelessWidget {
 
         SizedBox(height: context.h(20)),
 
-        ButtonReusable(
-          onPressed: () => Get.toNamed(AppRoutes.accountDelete),
-          text: 'YES, DELETE THIS ACCOUNT',
-          width: double.infinity,
+        Obx(
+          () => ButtonReusable(
+            onPressed: controller.isDeleting.value
+                ? null
+                : () => controller.deleteAccount(),
+            text: controller.isDeleting.value
+                ? 'DELETING...'
+                : 'YES, DELETE THIS ACCOUNT',
+            width: double.infinity,
+          ),
         ),
 
         SizedBox(height: context.h(21)),

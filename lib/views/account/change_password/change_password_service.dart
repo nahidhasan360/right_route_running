@@ -1,5 +1,10 @@
 import 'package:right_routes/core/constants/services/api_client.dart';
+import 'package:get/get.dart';
 import '../../../core/constants/api_config/api_config.dart';
+import '../../../core/constants/services/auth_service.dart';
+import '../../home/account_screen/account_screen_for_team.dart';
+import '../../home/account_screen/single_subscriber_screen.dart';
+import '../../home/account_screen/team_user_screen.dart';
 
 class ChangePasswordService {
   static Future<Map<String, dynamic>> changePassword(String newPassword) async {
@@ -28,6 +33,21 @@ class ChangePasswordService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = response.data;
+
+        // 💾 Update password in AuthService
+        await AuthService.saveUserPassword(newPassword);
+
+        // 🔄 Update active GetX Controllers so the UI refreshes instantly
+        if (Get.isRegistered<ManageAccountController>()) {
+          Get.find<ManageAccountController>().userPassword.value = newPassword;
+        }
+        if (Get.isRegistered<SingleSubscriberManageAccountController>()) {
+          Get.find<SingleSubscriberManageAccountController>().userPassword.value = newPassword;
+        }
+        if (Get.isRegistered<TeamUserManageAccountController>()) {
+          Get.find<TeamUserManageAccountController>().userPassword.value = newPassword;
+        }
+
         return {
           'success': true,
           'message': data is Map ? (data['message'] ?? 'Password changed successfully') : 'Password changed successfully',

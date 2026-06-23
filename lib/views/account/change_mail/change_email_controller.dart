@@ -91,7 +91,7 @@ class ChangeEmailController extends GetxController {
 
       // Navigate to success screen
       await Future.delayed(Duration(milliseconds: 500));
-      Get.toNamed(AppRoutes.emailSaved);
+      Get.offNamed(AppRoutes.emailSaved);
 
     } else {
       // ❌ Error

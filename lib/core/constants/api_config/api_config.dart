@@ -49,6 +49,7 @@ class ApiConfig {
   static const String refreshTokenEndpoint = '/auth/refresh-token/';
 
   static const String logoutEndpoint = '/auth/logout/';
+  static const String accountDeleteEndpoint = '/auth/account-delete/';
 
   // ========== FULL URLs ==========
   // static String get fullOcrUrl => '$baseUrl$processOcrEndpoint';
@@ -69,6 +70,7 @@ class ApiConfig {
   static String get fullVerifyTokenUrl => '$baseUrl$verifyTokenEndpoint';
   static String get fullRefreshTokenUrl => '$baseUrl$refreshTokenEndpoint';
   static String get fullLogoutUrl => '$baseUrl$logoutEndpoint';
+  static String get fullAccountDeleteUrl => '$baseUrl$accountDeleteEndpoint';
 
   // ========== TIMEOUT CONFIGURATIONS ==========
   static const Duration connectionTimeout = Duration(seconds: 60);

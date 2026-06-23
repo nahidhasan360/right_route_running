@@ -1,4 +1,5 @@
 import 'dart:math' show Point;
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart' show rootBundle;
@@ -9,6 +10,7 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:right_routes/core/constants/services/api_client.dart';
 import 'package:right_routes/core/constants/services/route_permit_service.dart';
 import 'package:right_routes/views/home/home_api_constant/home_api_constant.dart';
+import 'package:right_routes/views/home/create_new_routes/home_controller.dart';
 import 'package:dio/dio.dart' as dio;
 
 /// Controller for the Confirm & Edit Your Route screen.
@@ -30,7 +32,8 @@ class ConfirmRouteController extends GetxController {
   final RxBool isMapReady = false.obs;
   final RxBool isRouteLoading = false.obs;
   final RxBool isAddingPinMode = false.obs;
-  final RxBool isWaypointsExpanded = true.obs;
+  final RxBool isWaypointsExpanded = false.obs;
+  final RxMap<int, bool> expandedPermits = <int, bool>{}.obs;
 
   final RxList<TextEditingController> waypointControllers =
       <TextEditingController>[].obs;
@@ -48,9 +51,14 @@ class ConfirmRouteController extends GetxController {
   String? currentRouteId;
   String? currentPermitId;
   final RxList<int?> waypointIds = <int?>[].obs;
+  final RxList<Map<String, dynamic>> allPermits = <Map<String, dynamic>>[].obs;
 
   void toggleWaypoints() {
     isWaypointsExpanded.value = !isWaypointsExpanded.value;
+  }
+
+  void toggleStaticPermit(int index) {
+    expandedPermits[index] = !(expandedPermits[index] ?? false);
   }
 
   // ─────────────────────────────────────────────────────────────
@@ -143,6 +151,8 @@ class ConfirmRouteController extends GetxController {
       if (routeId != null && permitId != null) {
         // Fetch data from API if we have the IDs
         fetchPermitDetails(routeId, permitId);
+      } else if (routeId != null) {
+        fetchRouteDetails(routeId);
       } else {
         // Fallback to static arguments if no IDs provided
         final startLabel = (startLocation?.isNotEmpty == true)
@@ -188,6 +198,93 @@ class ConfirmRouteController extends GetxController {
   // ─────────────────────────────────────────────────────────────
   // API INTEGRATION
   // ─────────────────────────────────────────────────────────────
+
+  Future<void> fetchRouteDetails(String routeId) async {
+    try {
+      currentRouteId = routeId;
+      isRouteLoading.value = true;
+      final url = Uri.parse(
+          '${HomeApiConstant.baseUrl}${HomeApiConstant.routePost}$routeId/');
+      debugPrint('🚀 [FetchRouteDetails] Requesting: $url');
+
+      final response = await ApiClient.get(url);
+      final body = response.data;
+
+      if (response.statusCode == 200 && body['success'] == true) {
+        final data = body['data'];
+        routeNameController.text = data['name'] ?? '';
+
+        final permits = data['permits'] as List? ?? [];
+        allPermits.value = List<Map<String, dynamic>>.from(permits);
+
+        // Sync HomeController's currentPermitIndex
+        try {
+          if (Get.isRegistered<HomeController>()) {
+            Get.find<HomeController>().currentPermitIndex.value = permits.length;
+          }
+        } catch (_) {}
+
+        if (permits.isNotEmpty) {
+          // Load the LAST permit's waypoints into the map for editing
+          final permit = permits.last;
+
+          waypoints.clear();
+          _clearWaypointControllers();
+          _waypointPositions.clear();
+          _waypointSelectedStates.clear();
+          waypointIds.clear();
+
+          // Start location
+          final startLocationName = permit['start_location'] ?? '';
+          if (startLocationName.isNotEmpty) {
+            _appendWaypoint(
+              startLocationName,
+              LatLng((permit['start_latitude'] as num?)?.toDouble() ?? 0.0,
+                  (permit['start_longitude'] as num?)?.toDouble() ?? 0.0),
+              null,
+            );
+          }
+
+          // Intermediate waypoints
+          final wpList = permit['waypoints'] as List? ?? [];
+          for (final wp in wpList) {
+            _appendWaypoint(
+              wp['name'] ?? '',
+              LatLng((wp['latitude'] as num?)?.toDouble() ?? 0.0,
+                  (wp['longitude'] as num?)?.toDouble() ?? 0.0),
+              wp['id'],
+            );
+          }
+
+          // End location
+          final endLocationName = permit['end_location'] ?? '';
+          if (endLocationName.isNotEmpty) {
+            _appendWaypoint(
+              endLocationName,
+              LatLng((permit['end_latitude'] as num?)?.toDouble() ?? 0.0,
+                  (permit['end_longitude'] as num?)?.toDouble() ?? 0.0),
+              null,
+            );
+          }
+
+          if (_waypointPositions.isNotEmpty) {
+            currentLocation = _waypointPositions.first;
+            _mapCenter = _waypointPositions.first;
+          }
+
+          waypoints.refresh();
+
+          if (isMapReady.value && mapController != null) {
+            await _refreshMap();
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('❌ [FetchRouteDetails] Error: $e');
+    } finally {
+      isRouteLoading.value = false;
+    }
+  }
 
   /// Fetches all permits for the route, finds the one matching [permitId],
   /// then populates waypoints into the map.
@@ -428,7 +525,7 @@ class ConfirmRouteController extends GetxController {
           geometry: _waypointPositions[i],
           iconImage: 'pin-orange',
           iconSize: isSelected ? 0.55 : 0.45,
-          textField: '${i + 1}',
+          textField: i == 0 ? 'S' : (i == _waypointPositions.length - 1 && _waypointPositions.length > 1 ? 'E' : '$i'),
           textSize: 12.0,
           textOffset: const Offset(0, 0.6),
           textColor: '#FFFFFF',
@@ -507,7 +604,8 @@ class ConfirmRouteController extends GetxController {
 
     for (int attempt = 0; attempt <= _osrmMaxRetries; attempt++) {
       try {
-        final response = await ApiClient.get(uri, headers: {'User-Agent': 'RightRoutes/1.0'}, requireAuth: false);
+        final response = await ApiClient.get(uri,
+            headers: {'User-Agent': 'RightRoutes/1.0'}, requireAuth: false);
 
         if (response.statusCode == 200) {
           final data = response.data;
@@ -665,7 +763,8 @@ class ConfirmRouteController extends GetxController {
           'name': address,
         });
 
-        final response = await ApiClient.sendMultipartRequest(url, data: formData, method: 'POST');
+        final response = await ApiClient.sendMultipartRequest(url,
+            data: formData, method: 'POST');
         if (response.statusCode == 201 || response.statusCode == 200) {
           final data = response.data;
           if (data['data'] != null && data['data']['id'] != null) {
@@ -679,7 +778,16 @@ class ConfirmRouteController extends GetxController {
         }
       }
 
-      _appendWaypoint(address, point, newId);
+      if (waypoints.length >= 2) {
+        int insertIndex = waypoints.length - 1;
+        waypoints.insert(insertIndex, address);
+        waypointControllers.insert(insertIndex, TextEditingController(text: address));
+        _waypointSelectedStates.insert(insertIndex, false);
+        waypointIds.insert(insertIndex, newId);
+        _waypointPositions.insert(insertIndex, point);
+      } else {
+        _appendWaypoint(address, point, newId);
+      }
       await _refreshMap();
     } catch (e) {
       debugPrint("❌ Add waypoint error: $e");
@@ -756,7 +864,8 @@ class ConfirmRouteController extends GetxController {
           'name': name,
         });
 
-        final response = await ApiClient.sendMultipartRequest(url, data: formData, method: 'PATCH');
+        final response = await ApiClient.sendMultipartRequest(url,
+            data: formData, method: 'PATCH');
         if (response.statusCode == 200 || response.statusCode == 201) {
           Get.snackbar('Success', 'Waypoint updated on server',
               backgroundColor: Colors.green, colorText: Colors.white);
@@ -800,7 +909,46 @@ class ConfirmRouteController extends GetxController {
     }
   }
 
-  void updateRouteName(String val) => routeNameController.text = val;
+  Timer? _routeNameDebouncer;
+
+  void updateRouteName(String val) {
+    if (routeNameController.text != val) {
+      routeNameController.text = val;
+    }
+
+    if (currentRouteId != null && val.isNotEmpty) {
+      if (_routeNameDebouncer?.isActive ?? false) {
+        _routeNameDebouncer!.cancel();
+      }
+      _routeNameDebouncer = Timer(const Duration(milliseconds: 1000), () {
+        _updateRouteNameApi(val);
+      });
+    }
+  }
+
+  Future<void> _updateRouteNameApi(String newName) async {
+    if (currentRouteId == null) return;
+    try {
+      final url = Uri.parse(
+          '${HomeApiConstant.baseUrl}${HomeApiConstant.updateRouteName}$currentRouteId/update-name/');
+      debugPrint('🚀 [UpdateRouteName] Requesting: $url');
+
+      final response = await ApiClient.patch(
+        url,
+        body: {'name': newName},
+      );
+
+      final body = response.data;
+      if (response.statusCode == 200 && body['success'] == true) {
+        debugPrint('✅ [UpdateRouteName] Successfully updated to: $newName');
+      } else {
+        debugPrint(
+            '⚠️ [UpdateRouteName] API returned non-success: ${body['message']}');
+      }
+    } catch (e) {
+      debugPrint('❌ [UpdateRouteName] Error: $e');
+    }
+  }
 
   void addWaypointAt(int index) {
     if (index >= _waypointPositions.length) return;
@@ -817,6 +965,7 @@ class ConfirmRouteController extends GetxController {
         index + 1, TextEditingController(text: 'New Stop'));
     _waypointPositions.insert(index + 1, mid);
     _waypointSelectedStates.insert(index + 1, false);
+    waypointIds.insert(index + 1, null);
     _refreshMap();
   }
 

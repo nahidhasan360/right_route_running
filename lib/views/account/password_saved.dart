@@ -33,61 +33,9 @@ class PasswordSaved extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: isLandscape
-                ? EdgeInsets.all(context.s(12))
-                : EdgeInsets.only(
-                    top: context.h(20),
-                    left: context.w(20),
-                    right: context.w(20),
-                    bottom: context.w(20),
-                  ),
-            child: Flex(
-              direction: isLandscape ? Axis.horizontal : Axis.vertical,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-
-                // ==========================================
-                // HEADER / LOGO SECTION
-                // ==========================================
-                SizedBox(
-                  width: isLandscape
-                      ? MediaQuery.of(context).size.width * 0.35
-                      : double.infinity,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(height: isLandscape ? context.s(10) : context.h(40)),
-                      _buildLogo(context, isLandscape),
-                      SizedBox(height: isLandscape ? context.s(15) : context.h(25)),
-                      _buildBlueIcon(context, isLandscape),
-                    ],
-                  ),
-                ),
-
-                if (isLandscape) SizedBox(width: context.w(15)),
-
-                // ==========================================
-                // CONTENT + BUTTON SECTION
-                // ==========================================
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (!isLandscape) SizedBox(height: context.h(21)),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          physics: const BouncingScrollPhysics(),
-                          child: _buildContent(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          child: isLandscape
+              ? _buildLandscapeLayout(context)
+              : _buildPortraitLayout(context),
         ),
       ),
       bottomNavigationBar: const CustomNavbar(),
@@ -95,18 +43,80 @@ class PasswordSaved extends StatelessWidget {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // WIDGETS
+  // PORTRAIT LAYOUT
+  // ─────────────────────────────────────────────────────────────
+  Widget _buildPortraitLayout(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: context.w(20)),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.start,
+                children: [
+                  SizedBox(height: context.h(40)),
+                  _buildLogo(context),
+                  SizedBox(height: context.h(25)),
+                  _buildBlueIcon(context),
+                  SizedBox(height: context.h(21)),
+                  _buildContent(context),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // LANDSCAPE LAYOUT
+  // ─────────────────────────────────────────────────────────────
+  Widget _buildLandscapeLayout(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(context.s(12)),
+      child: Flex(
+        direction: Axis.horizontal,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // LEFT — sticky logo
+          SizedBox(
+            width: MediaQuery.of(context).size.width * 0.35,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                SizedBox(height: context.h(10)),
+                _buildLogo(context),
+                SizedBox(height: context.s(15)),
+                _buildBlueIcon(context),
+              ],
+            ),
+          ),
+          SizedBox(width: context.w(15)),
+          // RIGHT — content + button
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              child: _buildContent(context),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // SHARED WIDGETS
   // ─────────────────────────────────────────────────────────────
 
-  Widget _buildLogo(BuildContext context, bool isLandscape) {
+  Widget _buildLogo(BuildContext context) {
     return Center(
       child: Container(
-        width: isLandscape
-            ? MediaQuery.of(context).size.width * 0.25
-            : context.w(225),
-        height: isLandscape
-            ? MediaQuery.of(context).size.height * 0.25
-            : context.h(112),
+        width: context.w(225),
+        height: context.h(112),
         decoration: BoxDecoration(
           image: DecorationImage(
             image: AssetImage(ImageManager.splashScreenLogo),
@@ -117,11 +127,11 @@ class PasswordSaved extends StatelessWidget {
     );
   }
 
-  Widget _buildBlueIcon(BuildContext context, bool isLandscape) {
+  Widget _buildBlueIcon(BuildContext context) {
     return Center(
       child: SizedBox(
-        width: isLandscape ? context.s(50) : context.w(62),
-        height: isLandscape ? context.s(50) : context.h(62),
+        width: context.landscape ? context.s(50) : context.w(62),
+        height: context.landscape ? context.s(50) : context.h(62),
         child: SvgPicture.asset(
           SvgManager.blueIcon,
           fit: BoxFit.contain,
@@ -146,9 +156,9 @@ class PasswordSaved extends StatelessWidget {
         ),
         SizedBox(height: context.h(3)),
         Divider(color: AppColors.dividerColor, thickness: 1),
-        SizedBox(height: context.h(34)),
+        SizedBox(height: context.h(28)),
         ButtonReusable(
-          onPressed: () => Get.toNamed(AppRoutes.accountScreen),
+          onPressed: () => Get.until((route) => route.settings.name == AppRoutes.accountScreen),
           text: 'RETURN',
           width: double.infinity,
         ),

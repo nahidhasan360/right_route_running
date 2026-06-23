@@ -43,6 +43,26 @@ class ApiClient {
   }
 
   /// ═══════════════════════════════════════════════════════════
+  /// PATCH Request
+  /// ═══════════════════════════════════════════════════════════
+  static Future<Response> patch(
+    Uri url, {
+    Map<String, String>? headers,
+    Object? body,
+    bool requireAuth = true,
+  }) async {
+    return _request(
+      (options) => _dio.patchUri(
+        url,
+        data: body,
+        options: options,
+      ),
+      requireAuth: requireAuth,
+      customHeaders: headers,
+    );
+  }
+
+  /// ═══════════════════════════════════════════════════════════
   /// DELETE Request
   /// ═══════════════════════════════════════════════════════════
   static Future<Response> delete(

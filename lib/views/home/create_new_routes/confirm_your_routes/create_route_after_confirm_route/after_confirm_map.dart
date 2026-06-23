@@ -5,18 +5,18 @@ import 'package:maplibre_gl/maplibre_gl.dart';
 import 'package:get/get.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:right_routes/core/constants/services/api_client.dart';
-import 'package:right_routes/views/home/create_new_routes/home_controller.dart';
+import 'package:right_routes/views/home/create_new_routes/confirm_your_routes/create_route_after_confirm_route/after_confirm_controller.dart';
 
-class HomeScreenMap extends StatefulWidget {
-  const HomeScreenMap({super.key});
+class AfterConfirmMap extends StatefulWidget {
+  const AfterConfirmMap({super.key});
 
   @override
-  State<HomeScreenMap> createState() => _HomeScreenMapState();
+  State<AfterConfirmMap> createState() => _AfterConfirmMapState();
 }
 
-class _HomeScreenMapState extends State<HomeScreenMap> {
+class _AfterConfirmMapState extends State<AfterConfirmMap> {
   MapLibreMapController? mapController;
-  final HomeController _ctrl = Get.find<HomeController>();
+  final AfterConfirmController _ctrl = Get.find<AfterConfirmController>();
 
   Symbol? _startSymbol;
   Symbol? _endSymbol;
@@ -50,7 +50,6 @@ class _HomeScreenMapState extends State<HomeScreenMap> {
         },
         onStyleLoadedCallback: _onStyleLoaded,
         onMapClick: _onMapClick,
-        // Removed gestureRecognizers to allow proper multi-touch zoom and smooth panning
       ),
     );
   }

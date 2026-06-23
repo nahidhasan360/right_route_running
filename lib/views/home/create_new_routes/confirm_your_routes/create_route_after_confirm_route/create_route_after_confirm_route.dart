@@ -5,10 +5,16 @@ import 'package:right_routes/core/routes/all_routes.dart';
 import 'package:right_routes/global_widgets/custom_buttons.dart';
 import 'package:right_routes/utils/colors.dart';
 import 'package:right_routes/utils/responsive_ext.dart';
-import 'package:right_routes/views/home/create_new_routes/home_controller.dart';
+import 'package:right_routes/views/home/create_new_routes/confirm_your_routes/create_route_after_confirm_route/after_confirm_controller.dart';
 import 'package:right_routes/views/home/home_all_widgets/dialog/dialog_map.dart';
 import 'package:right_routes/views/home/home_all_widgets/dialog/dialog_document.dart';
-import 'package:right_routes/views/home/create_new_routes/home_screen_map.dart';
+import 'package:right_routes/views/home/create_new_routes/confirm_your_routes/create_route_after_confirm_route/after_confirm_map.dart';
+import 'package:right_routes/views/home/create_new_routes/home_controller.dart';
+import 'package:right_routes/views/home/create_new_routes/confirm_your_routes/confirm_controller.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../../../../global_widgets/custom_navbar.dart';
 import '../../../../../utils/assets_manager.dart';
 
@@ -30,9 +36,7 @@ import '../../../../../utils/assets_manager.dart';
 class CreateRouteAfterConfirmRoute extends StatelessWidget {
   CreateRouteAfterConfirmRoute({super.key});
 
-  final HomeController _ctrl = Get.isRegistered<HomeController>()
-      ? Get.find<HomeController>()
-      : Get.put(HomeController(), permanent: true);
+  final AfterConfirmController _ctrl = Get.put(AfterConfirmController());
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +89,16 @@ class CreateRouteAfterConfirmRoute extends StatelessWidget {
             SizedBox(height: context.h(8)),
             _buildStep1Label(context),
             SizedBox(height: context.h(12)),
-            const HomeScreenMap(),
+            Obx(() => _ctrl.isFetchingLocation.value
+                ? Container(
+                    height: context.h(300),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0B1129),
+                      borderRadius: BorderRadius.circular(context.r(4)),
+                    ),
+                    child: const Center(child: CircularProgressIndicator(color: AppColors.orange)),
+                  )
+                : const AfterConfirmMap()),
             SizedBox(height: context.h(12)),
             _buildStep2Label(context),
             SizedBox(height: context.h(16)),
@@ -159,11 +172,13 @@ class CreateRouteAfterConfirmRoute extends StatelessWidget {
             Expanded(
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(context.r(12)),
-                child: const SizedBox(
-                  width: double.infinity,
-                  height: double.infinity,
-                  child: HomeScreenMap(),
-                ),
+                child: Obx(() => _ctrl.isFetchingLocation.value
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.orange))
+                    : const SizedBox(
+                        width: double.infinity,
+                        height: double.infinity,
+                        child: AfterConfirmMap(),
+                      )),
               ),
             ),
           ],
@@ -196,15 +211,18 @@ class CreateRouteAfterConfirmRoute extends StatelessWidget {
 
   Widget _buildPermitTitle(BuildContext context) {
     return Center(
-      child: Obx(() => Text(
-            'Permit ${_ctrl.currentPermitIndex.value}',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: context.sp(20),
-              fontFamily: 'Lato',
-              fontWeight: FontWeight.w700,
-            ),
-          )),
+      child: Obx(() {
+        int index = Get.isRegistered<HomeController>() ? Get.find<HomeController>().currentPermitIndex.value : 1;
+        return Text(
+          'Permit ${index + 1}',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: context.sp(20),
+            fontFamily: 'Lato',
+            fontWeight: FontWeight.w700,
+          ),
+        );
+      }),
     );
   }
 
@@ -251,42 +269,45 @@ class CreateRouteAfterConfirmRoute extends StatelessWidget {
   }
 
   Widget _buildStep2Label(BuildContext context) {
-    return Obx(() => Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Text(
-              'Step 2: ',
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          'Step 2: ',
+          style: TextStyle(
+            color: AppColors.orange,
+            fontSize: context.sp(19),
+            fontFamily: 'Lato',
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        Flexible(
+          child: Obx(() {
+            int index = Get.isRegistered<HomeController>() ? Get.find<HomeController>().currentPermitIndex.value : 1;
+            return Text(
+              'Import Permit ${index + 1}',
               style: TextStyle(
-                color: AppColors.orange,
-                fontSize: context.sp(19),
+                color: Colors.white,
+                fontSize: context.sp(18),
                 fontFamily: 'Lato',
                 fontWeight: FontWeight.w700,
               ),
-            ),
-            Flexible(
-              child: Text(
-                'Import Permit ${_ctrl.currentPermitIndex.value}',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: context.sp(18),
-                  fontFamily: 'Lato',
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-            SizedBox(width: context.w(6)),
-            GestureDetector(
-              onTap: () {
-                showPermitDialog(context);
-              },
-              child: SvgPicture.asset(
-                'assets/icons/Question-Box-gray.svg',
-                width: context.w(20),
-                height: context.h(20),
-              ),
-            ),
-          ],
-        ));
+            );
+          }),
+        ),
+        SizedBox(width: context.w(6)),
+        GestureDetector(
+          onTap: () {
+            showPermitDialog(context);
+          },
+          child: SvgPicture.asset(
+            'assets/icons/Question-Box-gray.svg',
+            width: context.w(20),
+            height: context.h(20),
+          ),
+        ),
+      ],
+    );
   }
 
   Widget _buildActionButtonsRow(BuildContext context) {
@@ -302,11 +323,21 @@ class CreateRouteAfterConfirmRoute extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildActionButton(context, SvgManager.importWhite, finalWidth),
-              _buildActionButton(
-                  context, SvgManager.editPencilWhite, finalWidth),
-              _buildActionButton(context, SvgManager.micWhite, finalWidth),
-              _buildActionButton(context, SvgManager.cameraWhite, finalWidth),
+              _buildActionButton(context, SvgManager.importWhite, finalWidth, _pickFile, 'import'),
+              _buildActionButton(context, SvgManager.editPencilWhite, finalWidth, () => _showEditDialog(context), 'edit'),
+              _buildActionButton(context, SvgManager.micWhite, finalWidth, () {
+                _showMicDialog(context, title: 'Permit Text (Voice)', onDone: (text) {
+                  if (text.isNotEmpty) {
+                    _ctrl.permitText.value = text;
+                    _ctrl.permitFile.value = null;
+                    _ctrl.activeAction.value = 'mic';
+                    Get.snackbar('Success', 'Voice text saved', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+                  } else {
+                    Get.snackbar('Warning', 'No voice text captured', backgroundColor: Colors.orange, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+                  }
+                });
+              }, 'mic'),
+              _buildActionButton(context, SvgManager.cameraWhite, finalWidth, _takePhoto, 'camera'),
             ],
           ),
         ),
@@ -314,33 +345,165 @@ class CreateRouteAfterConfirmRoute extends StatelessWidget {
     });
   }
 
+  Future<void> _pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+    );
+    if (result != null && result.files.single.path != null) {
+      _ctrl.permitFile.value = File(result.files.single.path!);
+      _ctrl.permitText.value = '';
+      _ctrl.activeAction.value = 'import';
+      Get.snackbar('Success', 'File attached successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+    }
+  }
+
+  Future<void> _takePhoto() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.camera);
+    if (image != null) {
+      _ctrl.permitFile.value = File(image.path);
+      _ctrl.permitText.value = '';
+      _ctrl.activeAction.value = 'camera';
+      Get.snackbar('Success', 'Photo attached successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+    }
+  }
+
+  void _showEditDialog(BuildContext context) {
+    TextEditingController textController = TextEditingController(text: _ctrl.permitText.value);
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: AppColors.darkGray,
+        title: const Text('Edit Permit Text', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: textController,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'Type your permit text...',
+            hintStyle: TextStyle(color: Colors.white54),
+          ),
+          minLines: 1,
+          maxLines: null,
+          keyboardType: TextInputType.multiline,
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel', style: TextStyle(color: Colors.white))),
+          TextButton(
+            onPressed: () {
+              _ctrl.permitText.value = textController.text;
+              if (textController.text.isNotEmpty) {
+                _ctrl.permitFile.value = null;
+                _ctrl.activeAction.value = 'edit';
+              } else if (_ctrl.permitFile.value == null) {
+                _ctrl.activeAction.value = '';
+              }
+              Get.back();
+              Get.snackbar('Success', 'Text saved successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+            }, 
+            child: Text('Done', style: TextStyle(color: AppColors.orange))
+          ),
+        ],
+      )
+    );
+  }
+
+  void _showMicDialog(BuildContext context, {required String title, required Function(String) onDone}) {
+    stt.SpeechToText speech = stt.SpeechToText();
+    RxBool isListening = false.obs;
+    RxString spokenText = ''.obs;
+
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: AppColors.darkGray,
+        title: Text(title, style: const TextStyle(color: Colors.white)),
+        content: Obx(() => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(spokenText.value.isEmpty ? 'Tap mic and speak...' : spokenText.value, 
+                 style: const TextStyle(color: Colors.white)),
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: () async {
+                if (!isListening.value) {
+                  bool available = await speech.initialize();
+                  if (available) {
+                    isListening.value = true;
+                    speech.listen(onResult: (val) {
+                      spokenText.value = val.recognizedWords;
+                    });
+                  } else {
+                    Get.snackbar('Error', 'Microphone permission denied', backgroundColor: Colors.red, colorText: Colors.white, duration: const Duration(seconds: 1));
+                  }
+                } else {
+                  isListening.value = false;
+                  speech.stop();
+                }
+              },
+              child: CircleAvatar(
+                radius: 30,
+                backgroundColor: isListening.value ? Colors.red : AppColors.orange,
+                child: Icon(isListening.value ? Icons.mic : Icons.mic_none, color: Colors.white, size: 30),
+              ),
+            )
+          ],
+        )),
+        actions: [
+          TextButton(onPressed: () {
+            speech.stop();
+            Get.back();
+          }, child: const Text('Cancel', style: TextStyle(color: Colors.white))),
+          TextButton(
+            onPressed: () {
+              speech.stop();
+              Get.back();
+              onDone(spokenText.value);
+            }, 
+            child: const Text('Done', style: TextStyle(color: AppColors.orange))
+          ),
+        ],
+      )
+    );
+  }
+
   Widget _buildContinueButton(BuildContext context) {
     return Center(
-      child: CustomButton(
-        text: 'CONTINUE',
-        width: context.w(150),
+      child: Obx(() => CustomButton(
+        text: _ctrl.isCreating.value ? 'Loading...' : 'CONTINUE',
+        width: _ctrl.isCreating.value ? context.w(160) : context.w(150),
         height: context.h(50),
-        fontSize: context.sp(26),
+        fontSize: _ctrl.isCreating.value ? context.sp(22) : context.sp(26),
         backgroundColor: AppColors.orange,
         borderRadius: 13,
-        onPressed: () {
-          Get.toNamed(AppRoutes.confirmYourRoutes);
+        onPressed: _ctrl.isCreating.value ? () {} : () async {
+          final args = Get.arguments;
+          final routeId = args?['routeId'];
+          if (routeId == null) {
+            Get.snackbar('Error', 'Route ID is missing', backgroundColor: Colors.red, colorText: Colors.white);
+            return;
+          }
+          final success = await _ctrl.submitCreateSubsequentPermit(routeId.toString());
+          if (success) {
+            if (Get.isRegistered<HomeController>()) {
+              Get.find<HomeController>().currentPermitIndex.value++;
+            }
+            Get.offNamed(AppRoutes.confirmYourRoutes, arguments: {'routeId': routeId.toString()});
+          }
         },
-      ),
+      )),
     );
   }
 
   Widget _buildActionButton(
-      BuildContext context, String svgPath, double width) {
-    return GestureDetector(
-      onTap: () {
-        // TODO: Implement action
-      },
+      BuildContext context, String svgPath, double width, VoidCallback onTap, String actionType) {
+    return Obx(() => GestureDetector(
+      onTap: onTap,
       child: Container(
         width: width,
         height: context.h(46),
         decoration: BoxDecoration(
-          color: AppColors.orange,
+          color: _ctrl.activeAction.value == actionType 
+              ? AppColors.orange.withOpacity(0.5)
+              : AppColors.orange,
           borderRadius: BorderRadius.circular(context.r(9)),
         ),
         child: Center(
@@ -355,6 +518,6 @@ class CreateRouteAfterConfirmRoute extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ));
   }
 }

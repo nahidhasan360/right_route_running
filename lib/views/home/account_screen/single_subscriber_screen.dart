@@ -14,6 +14,19 @@ import 'logout_api_service.dart';
 // -----------------------------------------------------------------------------
 class SingleSubscriberManageAccountController extends GetxController {
   RxBool showPassword = false.obs;
+  RxString userEmail = "".obs;
+  RxString userPassword = "".obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    userEmail.value = AuthService.getUserEmail() ?? "";
+    userPassword.value = await AuthService.getUserPassword() ?? "";
+  }
 
   void togglePassword() {
     showPassword.value = !showPassword.value;
@@ -240,10 +253,10 @@ class SingleSubscriberScreen extends StatelessWidget {
             fontWeight: FontWeight.w500,
           ),
         ),
-        RRRightArrowTile(
-          title: "emailaddress@email.com",
+        Obx(() => RRRightArrowTile(
+          title: c.userEmail.value.isNotEmpty ? c.userEmail.value : "No Email",
           onTap: () => Get.toNamed(AppRoutes.changeEmail),
-        ),
+        )),
       ],
     );
   }
@@ -287,7 +300,7 @@ class SingleSubscriberScreen extends StatelessWidget {
             Obx(() => Padding(
                   padding: EdgeInsets.symmetric(vertical: context.h(5)),
                   child: Text(
-                    c.showPassword.value ? "mypassword123" : "**********",
+                    c.showPassword.value ? (c.userPassword.value.isNotEmpty ? c.userPassword.value : "No Password") : "**********",
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: context.sp(18),

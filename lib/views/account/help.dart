@@ -26,59 +26,9 @@ class Help extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: Padding(
-            padding: isLandscape
-                ? EdgeInsets.all(context.s(12))
-                : EdgeInsets.only(
-                    top: context.h(20),
-                    left: context.w(20),
-                    right: context.w(20),
-                    bottom: context.w(20),
-                  ),
-            child: Flex(
-              direction: isLandscape ? Axis.horizontal : Axis.vertical,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-
-                // ==========================================
-                // HEADER / LOGO SECTION
-                // ==========================================
-                SizedBox(
-                  width: isLandscape
-                      ? MediaQuery.of(context).size.width * 0.35
-                      : double.infinity,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      SizedBox(height: isLandscape ? context.s(10) : 0),
-                      _buildLogo(context, isLandscape),
-                    ],
-                  ),
-                ),
-
-                if (isLandscape) SizedBox(width: context.w(15)),
-
-                // ==========================================
-                // CONTENT + BUTTON SECTION
-                // ==========================================
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (!isLandscape) SizedBox(height: context.h(29)),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          physics: const BouncingScrollPhysics(),
-                          child: _buildContent(context),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+          child: isLandscape
+              ? _buildLandscapeLayout(context)
+              : _buildPortraitLayout(context),
         ),
       ),
       bottomNavigationBar: const CustomNavbar(),
@@ -86,18 +36,105 @@ class Help extends StatelessWidget {
   }
 
   // ─────────────────────────────────────────────────────────────
-  // WIDGETS
+  // PORTRAIT LAYOUT
+  // ─────────────────────────────────────────────────────────────
+  Widget _buildPortraitLayout(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: context.w(20)),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const BouncingScrollPhysics(),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraints.maxHeight),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    children: [
+                      SizedBox(height: context.h(20)), // matches previous top padding
+                      _buildLogo(context),
+                      SizedBox(height: context.h(29)), // from previous gap
+                      _buildContent(context),
+                    ],
+                  ),
+                  Padding(
+                    padding: EdgeInsets.only(
+                      top: context.h(20),
+                      bottom: context.h(20),
+                    ),
+                    child: ButtonReusable(
+                      onPressed: () => Get.toNamed(AppRoutes.getStartedScreen),
+                      text: 'DONE',
+                      width: double.infinity,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // LANDSCAPE LAYOUT
+  // ─────────────────────────────────────────────────────────────
+  Widget _buildLandscapeLayout(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.all(context.s(12)),
+      child: Flex(
+        direction: Axis.horizontal,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // LEFT — sticky logo
+          SizedBox(
+            width: MediaQuery.of(context).size.width * 0.35,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                SizedBox(height: context.h(10)),
+                _buildLogo(context),
+              ],
+            ),
+          ),
+          SizedBox(width: context.w(15)),
+          // RIGHT — content + button
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: _buildContent(context),
+                  ),
+                ),
+                SizedBox(height: context.h(10)),
+                ButtonReusable(
+                  onPressed: () => Get.toNamed(AppRoutes.getStartedScreen),
+                  text: 'DONE',
+                  width: double.infinity,
+                ),
+                SizedBox(height: context.h(12)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────
+  // SHARED WIDGETS
   // ─────────────────────────────────────────────────────────────
 
-  Widget _buildLogo(BuildContext context, bool isLandscape) {
+  Widget _buildLogo(BuildContext context) {
     return Center(
       child: Container(
-        width: isLandscape
-            ? MediaQuery.of(context).size.width * 0.25
-            : context.w(225),
-        height: isLandscape
-            ? MediaQuery.of(context).size.height * 0.25
-            : context.h(112),
+        width: context.w(225),
+        height: context.h(112),
         decoration: BoxDecoration(
           image: DecorationImage(
             image: AssetImage(ImageManager.splashScreenLogo),
@@ -174,13 +211,7 @@ class Help extends StatelessWidget {
             fontWeight: FontWeight.w400,
           ),
         ),
-        SizedBox(height: context.h(89)),
-        ButtonReusable(
-          onPressed: () => Get.toNamed(AppRoutes.getStartedScreen),
-          text: 'DONE',
-          width: double.infinity,
-        ),
-        SizedBox(height: context.h(20)),
+        SizedBox(height: context.h(89)), // Spacing before the button container
       ],
     );
   }

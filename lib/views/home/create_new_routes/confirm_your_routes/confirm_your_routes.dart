@@ -11,11 +11,13 @@ import 'package:right_routes/utils/colors.dart';
 import 'package:right_routes/utils/responsive_ext.dart';
 import 'package:right_routes/core/routes/all_routes.dart';
 import 'package:right_routes/views/home/create_new_routes/confirm_your_routes/confirm_controller.dart';
+import 'package:right_routes/views/home/home_api_constant/home_api_constant.dart';
+import 'package:right_routes/views/home/create_new_routes/confirm_your_routes/create_route_after_confirm_route/after_confirm_controller.dart';
 import 'package:right_routes/views/home/create_new_routes/home_controller.dart';
 import 'package:right_routes/global_widgets/custom_info_dialog.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 import '../drive_screen/drive_screen.dart';
-
 
 // ─── Map Style ────────────────────────────────────────────────────────────────
 const _kMapTilerKey = 'dHNKoVs9jL46w6oUpFt3';
@@ -77,59 +79,67 @@ class EditConfirmStartYourRoute extends StatelessWidget {
       children: [
         SizedBox(height: context.h(16)),
         Expanded(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            keyboardDismissBehavior:
-                ScrollViewKeyboardDismissBehavior.onDrag,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Center(
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: context.w(20)),
-                    child: _buildTitle(context),
+          child: RefreshIndicator(
+            onRefresh: () async {
+              if (controller.currentRouteId != null) {
+                await controller.fetchRouteDetails(controller.currentRouteId!);
+              }
+            },
+            color: AppColors.orange,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                  parent: BouncingScrollPhysics()),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: context.w(20)),
+                      child: _buildTitle(context),
+                    ),
                   ),
-                ),
-                SizedBox(height: context.h(14)),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: context.w(15)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _sectionLabel(context, 'Route Name'),
-                      SizedBox(height: context.h(6)),
-                      _buildRouteNameField(context),
-                      SizedBox(height: context.h(14)),
-                    ],
+                  SizedBox(height: context.h(14)),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: context.w(15)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _sectionLabel(context, 'Route Name'),
+                        SizedBox(height: context.h(6)),
+                        _buildRouteNameField(context),
+                        SizedBox(height: context.h(14)),
+                      ],
+                    ),
                   ),
-                ),
-                _buildMapSection(context, height: context.h(260)),
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: context.w(15)),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(height: context.h(12)),
-                      _buildActionButtonsRow(context),
-                      SizedBox(height: context.h(16)),
-                      _buildWaypointsSectionHeader(context),
-                      SizedBox(height: context.h(8)),
-                      _buildPermitRow(context),
-                      SizedBox(height: context.h(10)),
-                      Obx(() => controller.isWaypointsExpanded.value
-                          ? _buildWaypointList(context)
-                          : const SizedBox.shrink()),
-                      SizedBox(height: context.h(14)),
-                      _buildAddPermitButton(context),
-                      SizedBox(height: context.h(14)),
-                      _buildTotalMilesText(context),
-                      SizedBox(height: context.h(18)),
-                      _buildBottomButtons(context),
-                      SizedBox(height: context.h(24)),
-                    ],
+                  _buildMapSection(context, height: context.h(260)),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: context.w(15)),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(height: context.h(12)),
+                        _buildActionButtonsRow(context),
+                        SizedBox(height: context.h(16)),
+                        _buildWaypointsSectionHeader(context),
+                        SizedBox(height: context.h(8)),
+                        _buildPermitRow(context),
+                        SizedBox(height: context.h(10)),
+                        Obx(() => controller.isWaypointsExpanded.value
+                            ? _buildWaypointList(context)
+                            : const SizedBox.shrink()),
+                        SizedBox(height: context.h(14)),
+                        _buildAddPermitButton(context),
+                        SizedBox(height: context.h(14)),
+                        _buildTotalMilesText(context),
+                        SizedBox(height: context.h(18)),
+                        _buildBottomButtons(context),
+                        SizedBox(height: context.h(24)),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -161,36 +171,46 @@ class EditConfirmStartYourRoute extends StatelessWidget {
             // ── LEFT COLUMN ──────────────────────────────────────
             SizedBox(
               width: MediaQuery.of(context).size.width * 0.42,
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(child: _buildTitle(context)),
-                    SizedBox(height: context.h(14)),
-                    _sectionLabel(context, 'Route Name'),
-                    SizedBox(height: context.h(6)),
-                    _buildRouteNameField(context),
-                    SizedBox(height: context.h(16)),
-                    _buildActionButtonsRow(context),
-                    SizedBox(height: context.h(16)),
-                    _buildWaypointsSectionHeader(context),
-                    SizedBox(height: context.h(8)),
-                    _buildPermitRow(context),
-                    SizedBox(height: context.h(10)),
-                    Obx(() => controller.isWaypointsExpanded.value
-                        ? _buildWaypointList(context)
-                        : const SizedBox.shrink()),
-                    SizedBox(height: context.h(14)),
-                    _buildAddPermitButton(context),
-                    SizedBox(height: context.h(14)),
-                    _buildTotalMilesText(context),
-                    SizedBox(height: context.h(18)),
-                    _buildBottomButtons(context),
-                    SizedBox(height: context.h(20)),
-                  ],
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  if (controller.currentRouteId != null) {
+                    await controller
+                        .fetchRouteDetails(controller.currentRouteId!);
+                  }
+                },
+                color: AppColors.orange,
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(
+                      parent: BouncingScrollPhysics()),
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Center(child: _buildTitle(context)),
+                      SizedBox(height: context.h(14)),
+                      _sectionLabel(context, 'Route Name'),
+                      SizedBox(height: context.h(6)),
+                      _buildRouteNameField(context),
+                      SizedBox(height: context.h(16)),
+                      _buildActionButtonsRow(context),
+                      SizedBox(height: context.h(16)),
+                      _buildWaypointsSectionHeader(context),
+                      SizedBox(height: context.h(8)),
+                      _buildPermitRow(context),
+                      SizedBox(height: context.h(10)),
+                      Obx(() => controller.isWaypointsExpanded.value
+                          ? _buildWaypointList(context)
+                          : const SizedBox.shrink()),
+                      SizedBox(height: context.h(14)),
+                      _buildAddPermitButton(context),
+                      SizedBox(height: context.h(14)),
+                      _buildTotalMilesText(context),
+                      SizedBox(height: context.h(18)),
+                      _buildBottomButtons(context),
+                      SizedBox(height: context.h(20)),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -235,46 +255,166 @@ class EditConfirmStartYourRoute extends StatelessWidget {
   }
 
   Widget _buildPermitRow(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          'Permit 1',
-          style: TextStyle(
-            color: AppColors.white,
-            fontSize: context.sp(16),
-            fontFamily: 'Lato',
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        SizedBox(width: context.w(8)),
-        GestureDetector(
-          onTap: controller.toggleWaypoints,
-          child: Container(
-            width: context.w(22),
-            height: context.h(22),
-            decoration: BoxDecoration(
-              color: AppColors.orange,
-              borderRadius: BorderRadius.circular(context.r(5)),
+    return Obx(() {
+      final permits = controller.allPermits;
+      final permitCount = permits.isNotEmpty
+          ? permits.length
+          : homeCtrl.currentPermitIndex.value;
+
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: List.generate(permitCount, (index) {
+          int permitNum = index + 1;
+          bool isLast = permitNum == permitCount;
+
+          // Build waypoints for this permit from API data
+          List<String> permitWaypoints = [];
+          if (index < permits.length) {
+            final permit = permits[index];
+            final startLoc = permit['start_location'] ?? '';
+            if (startLoc.isNotEmpty) permitWaypoints.add(startLoc);
+            final wps = permit['waypoints'] as List? ?? [];
+            for (final wp in wps) {
+              permitWaypoints.add(wp['name'] ?? '');
+            }
+            final endLoc = permit['end_location'] ?? '';
+            if (endLoc.isNotEmpty) permitWaypoints.add(endLoc);
+          }
+
+          return Padding(
+            padding: EdgeInsets.only(bottom: isLast ? 0 : context.h(8)),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      'Permit $permitNum',
+                      style: TextStyle(
+                        color: AppColors.white,
+                        fontSize: context.sp(16),
+                        fontFamily: 'Lato',
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    SizedBox(width: context.w(8)),
+                    GestureDetector(
+                      onTap: isLast
+                          ? controller.toggleWaypoints
+                          : () => controller.toggleStaticPermit(index),
+                      child: Container(
+                        width: context.w(22),
+                        height: context.h(22),
+                        decoration: BoxDecoration(
+                          color: AppColors.orange,
+                          borderRadius: BorderRadius.circular(context.r(5)),
+                        ),
+                        child: Obx(() {
+                          bool isExpanded = isLast
+                              ? controller.isWaypointsExpanded.value
+                              : (controller.expandedPermits[index] ?? true);
+                          return Icon(
+                              isExpanded
+                                  ? Icons.keyboard_arrow_up
+                                  : Icons.keyboard_arrow_down,
+                              color: Colors.white,
+                              size: context.sp(18));
+                        }),
+                      ),
+                    ),
+                  ],
+                ),
+                // Show waypoints for this permit (same style as main waypoint list)
+                if (permitWaypoints.isNotEmpty &&
+                    (isLast
+                        ? !controller.isWaypointsExpanded.value
+                        : (controller.expandedPermits[index] ?? true)))
+                  Padding(
+                    padding: EdgeInsets.only(top: context.h(4)),
+                    child: Column(
+                      children: List.generate(permitWaypoints.length, (wpIdx) {
+                        final isFirst = wpIdx == 0;
+                        final isEnd = wpIdx == permitWaypoints.length - 1 &&
+                            permitWaypoints.length > 1;
+                        final Color bg = (isFirst || isEnd)
+                            ? const Color(0xFF808080)
+                            : AppColors.white;
+                        final Color borderColor = isFirst
+                            ? _C.wpGreen
+                            : isEnd
+                                ? _C.wpRed
+                                : Colors.transparent;
+                        final double borderWidth =
+                            borderColor == Colors.transparent ? 0 : 2.0;
+                        final Color textColor =
+                            isEnd ? AppColors.white : AppColors.darkGray;
+
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: context.h(2)),
+                          child: Row(
+                            children: [
+                              SizedBox(width: context.w(32)),
+                              Expanded(
+                                child: Container(
+                                  height: context.h(33),
+                                  decoration: BoxDecoration(
+                                    color: bg,
+                                    borderRadius:
+                                        BorderRadius.circular(context.r(4)),
+                                    border: Border.all(
+                                        color: borderColor, width: borderWidth),
+                                  ),
+                                  child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Padding(
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: context.w(12)),
+                                      child: Text(
+                                        permitWaypoints[wpIdx],
+                                        style: TextStyle(
+                                          color: textColor,
+                                          fontSize: context.sp(16),
+                                          fontFamily: 'Lato',
+                                          fontWeight: FontWeight.w400,
+                                        ),
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: context.w(32)),
+                            ],
+                          ),
+                        );
+                      }),
+                    ),
+                  ),
+              ],
             ),
-            child: Obx(() => Icon(
-                controller.isWaypointsExpanded.value
-                    ? Icons.keyboard_arrow_up
-                    : Icons.keyboard_arrow_down,
-                color: Colors.white,
-                size: context.sp(18))),
-          ),
-        ),
-      ],
-    );
+          );
+        }),
+      );
+    });
   }
 
   Widget _buildAddPermitButton(BuildContext context) {
     return Align(
       alignment: Alignment.centerLeft,
       child: GestureDetector(
-        onTap: () {
-          homeCtrl.currentPermitIndex.value++;
-          Get.toNamed(AppRoutes.createRouteAfterConfirmRoute);
+        onTap: () async {
+          if (controller.currentRouteId != null) {
+            Get.put(AfterConfirmController())
+                .initSubsequentPermit(controller.currentRouteId!);
+          }
+          await Get.toNamed(
+            AppRoutes.createRouteAfterConfirmRoute,
+            arguments: {'routeId': controller.currentRouteId},
+          );
+          if (controller.currentRouteId != null) {
+            controller.fetchRouteDetails(controller.currentRouteId!);
+          }
         },
         child: Obx(() => Container(
               padding: EdgeInsets.symmetric(
@@ -350,7 +490,8 @@ class EditConfirmStartYourRoute extends StatelessWidget {
             minMaxZoomPreference: const MinMaxZoomPreference(1, 20),
           ),
           Obx(() {
-            if (!controller.isRouteLoading.value) return const SizedBox.shrink();
+            if (!controller.isRouteLoading.value)
+              return const SizedBox.shrink();
             return Positioned(
               bottom: context.h(10),
               left: 0,
@@ -387,7 +528,8 @@ class EditConfirmStartYourRoute extends StatelessWidget {
             );
           }),
           Obx(() {
-            if (!controller.isAddingPinMode.value) return const SizedBox.shrink();
+            if (!controller.isAddingPinMode.value)
+              return const SizedBox.shrink();
             return Positioned(
               top: context.h(10),
               left: 0,
@@ -592,7 +734,6 @@ class EditConfirmStartYourRoute extends StatelessWidget {
                     borderRadius: BorderRadius.circular(context.r(4)),
                     border: Border.all(color: borderColor, width: borderWidth),
                   ),
-                  padding: EdgeInsets.symmetric(horizontal: context.w(12)),
                   child: Row(
                     children: [
                       Expanded(
@@ -611,27 +752,38 @@ class EditConfirmStartYourRoute extends StatelessWidget {
                           textInputAction: TextInputAction.done,
                           maxLines: 1,
                           onSubmitted: (_) => FocusScope.of(context).unfocus(),
-                          decoration: const InputDecoration(
+                          decoration: InputDecoration(
                               border: InputBorder.none,
                               isDense: true,
-                              contentPadding: EdgeInsets.zero),
+                              contentPadding: EdgeInsets.symmetric(
+                                  horizontal: context.w(12), vertical: 0)),
                         ),
                       ),
                       if (!isFirst && !isLast) ...[
-                        SizedBox(width: context.w(6)),
                         GestureDetector(
                           onTap: () {
-                            // TODO: Implement mic action
+                            FocusScope.of(context).unfocus();
+                            _showMicDialog(
+                              context,
+                              title: 'Speak Waypoint',
+                              onDone: (text) {
+                                ctrl.updateWaypoint(index, text);
+                                ctrl.waypointControllers[index].text = text;
+                              },
+                            );
                           },
-                          child: Container(
-                            width: context.w(20),
-                            height: context.h(20),
-                            decoration: BoxDecoration(
-                                color: AppColors.orange,
-                                borderRadius:
-                                    BorderRadius.circular(context.r(6))),
-                            child: Icon(Icons.mic_none,
-                                color: AppColors.white, size: context.sp(18)),
+                          child: Padding(
+                            padding: EdgeInsets.only(right: context.w(6)),
+                            child: Container(
+                              width: context.w(20),
+                              height: context.h(20),
+                              decoration: BoxDecoration(
+                                  color: AppColors.orange,
+                                  borderRadius:
+                                      BorderRadius.circular(context.r(6))),
+                              child: Icon(Icons.mic_none,
+                                  color: AppColors.white, size: context.sp(18)),
+                            ),
                           ),
                         ),
                       ],
@@ -679,7 +831,8 @@ class EditConfirmStartYourRoute extends StatelessWidget {
                 color: const Color(0xFF6E6E6E),
                 borderRadius: BorderRadius.circular(context.r(4)),
               ),
-              child: Icon(Icons.add, color: AppColors.white, size: context.sp(14)),
+              child:
+                  Icon(Icons.add, color: AppColors.white, size: context.sp(14)),
             ),
           ),
           SizedBox(width: context.w(6)),
@@ -783,16 +936,28 @@ class EditConfirmStartYourRoute extends StatelessWidget {
                   isDense: true),
             ),
           ),
-          Padding(
-            padding: EdgeInsets.only(right: context.w(6)),
-            child: Container(
-              width: context.w(20),
-              height: context.h(20),
-              decoration: BoxDecoration(
-                  color: AppColors.orange,
-                  borderRadius: BorderRadius.circular(context.r(6))),
-              child: Icon(Icons.mic_none,
-                  color: AppColors.white, size: context.sp(18)),
+          GestureDetector(
+            onTap: () {
+              FocusScope.of(context).unfocus();
+              _showMicDialog(
+                context,
+                title: 'Speak Route Name',
+                onDone: (text) {
+                  controller.updateRouteName(text);
+                },
+              );
+            },
+            child: Padding(
+              padding: EdgeInsets.only(right: context.w(6)),
+              child: Container(
+                width: context.w(20),
+                height: context.h(20),
+                decoration: BoxDecoration(
+                    color: AppColors.orange,
+                    borderRadius: BorderRadius.circular(context.r(6))),
+                child: Icon(Icons.mic_none,
+                    color: AppColors.white, size: context.sp(18)),
+              ),
             ),
           ),
         ],
@@ -816,7 +981,8 @@ class EditConfirmStartYourRoute extends StatelessWidget {
                   offset: const Offset(0, 2))
             ]),
         child: Icon(icon,
-            color: AppColors.black.withValues(alpha: 0.87), size: context.sp(22)),
+            color: AppColors.black.withValues(alpha: 0.87),
+            size: context.sp(22)),
       ),
     );
   }
@@ -826,8 +992,8 @@ class EditConfirmStartYourRoute extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding:
-            EdgeInsets.symmetric(horizontal: context.w(6), vertical: context.h(4)),
+        padding: EdgeInsets.symmetric(
+            horizontal: context.w(6), vertical: context.h(4)),
         decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(context.r(7)),
@@ -846,6 +1012,73 @@ class EditConfirmStartYourRoute extends StatelessWidget {
                 letterSpacing: 0.5)),
       ),
     );
+  }
+
+  void _showMicDialog(BuildContext context,
+      {required String title, required Function(String) onDone}) {
+    stt.SpeechToText speech = stt.SpeechToText();
+    RxBool isListening = false.obs;
+    RxString spokenText = ''.obs;
+
+    Get.dialog(AlertDialog(
+      backgroundColor: AppColors.darkGray,
+      title: Text(title, style: const TextStyle(color: Colors.white)),
+      content: Obx(() => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                  spokenText.value.isEmpty
+                      ? 'Tap mic and speak...'
+                      : spokenText.value,
+                  style: const TextStyle(color: Colors.white)),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: () async {
+                  if (!isListening.value) {
+                    bool available = await speech.initialize();
+                    if (available) {
+                      isListening.value = true;
+                      speech.listen(onResult: (val) {
+                        spokenText.value = val.recognizedWords;
+                      });
+                    } else {
+                      Get.snackbar('Error', 'Microphone permission denied',
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                          duration: const Duration(seconds: 1));
+                    }
+                  } else {
+                    isListening.value = false;
+                    speech.stop();
+                  }
+                },
+                child: CircleAvatar(
+                  radius: 30,
+                  backgroundColor:
+                      isListening.value ? Colors.red : AppColors.orange,
+                  child: Icon(isListening.value ? Icons.mic : Icons.mic_none,
+                      color: Colors.white, size: 30),
+                ),
+              )
+            ],
+          )),
+      actions: [
+        TextButton(
+            onPressed: () {
+              speech.stop();
+              Get.back();
+            },
+            child: const Text('Cancel', style: TextStyle(color: Colors.white))),
+        TextButton(
+            onPressed: () {
+              speech.stop();
+              Get.back();
+              onDone(spokenText.value);
+            },
+            child:
+                const Text('Done', style: TextStyle(color: AppColors.orange))),
+      ],
+    ));
   }
 }
 

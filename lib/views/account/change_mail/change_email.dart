@@ -49,7 +49,7 @@ class ChangeEmail extends StatelessWidget {
           children: [
             SizedBox(height: context.h(20)),
             _buildLogo(context),
-            SizedBox(height: context.h(39)),
+            SizedBox(height: context.h(20)),
             _buildFormContent(context),
           ],
         ),
