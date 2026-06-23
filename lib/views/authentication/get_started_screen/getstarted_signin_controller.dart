@@ -7,7 +7,8 @@ class GetStartedSignInController extends GetxController {
   final LoginApiService _apiService = LoginApiService();
 
   final TextEditingController emailController = TextEditingController();
-  // otpController removed — pin field is managed internally by pin_code_fields
+  final TextEditingController otpController = TextEditingController();
+  
   // pinResetKey is incremented to trigger a fresh empty pin field on resend
   final RxInt pinResetKey = 0.obs;
 
@@ -28,6 +29,13 @@ class GetStartedSignInController extends GetxController {
       email.value = emailController.text.trim();
       isEmailValid.value = GetUtils.isEmail(email.value);
     });
+  }
+
+  @override
+  void onClose() {
+    emailController.dispose();
+    otpController.dispose();
+    super.onClose();
   }
 
 
@@ -121,6 +129,7 @@ class GetStartedSignInController extends GetxController {
       );
 
       if (result['success'] == true) {
+        otpController.clear();
         pinResetKey.value++; // triggers PinCodeTextField to rebuild fresh
         otp.value = '';
         Get.snackbar('Success', 'Code has been resent to ${email.value}',

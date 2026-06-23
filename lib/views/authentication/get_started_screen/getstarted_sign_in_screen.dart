@@ -242,7 +242,7 @@ class _GetStartedSignInScreenState extends State<GetStartedSignInScreen> {
                 return PinCodeTextField(
                   length: 6,
                   appContext: ctx,
-                  // No external controller — pin_code_fields manages internally
+                  controller: controller.otpController,
                   animationType: AnimationType.fade,
                   keyboardType: TextInputType.number,
                   obscureText: false,

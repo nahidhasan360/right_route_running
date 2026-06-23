@@ -7,7 +7,8 @@ import 'package:right_routes/views/authentication/login_account/login_api_servic
 class OtpVerificationController extends GetxController {
   final LoginApiService _apiService = LoginApiService();
 
-  // otpController removed — pin field is managed internally by pin_code_fields
+  final TextEditingController otpController = TextEditingController();
+  
   // pinResetKey is incremented to trigger a fresh empty pin field on resend
   final RxInt pinResetKey = 0.obs;
   final RxString otp = ''.obs;
@@ -22,6 +23,12 @@ class OtpVerificationController extends GetxController {
   void onInit() {
     super.onInit();
     _parseArguments();
+  }
+
+  @override
+  void onClose() {
+    otpController.dispose();
+    super.onClose();
   }
 
   void _parseArguments() {
@@ -125,6 +132,7 @@ class OtpVerificationController extends GetxController {
       final result = await _apiService.sendOtp(email: email, purpose: purpose);
 
       if (result['success'] == true) {
+        otpController.clear();
         pinResetKey.value++; // triggers PinCodeTextField to rebuild fresh
         otp.value = '';
         _showSuccess('OTP has been resent to your email');
