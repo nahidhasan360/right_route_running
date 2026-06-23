@@ -12,6 +12,10 @@ import '../../../../global_widgets/custom_navbar.dart';
 import '../../../../utils/assets_manager.dart';
 import 'package:right_routes/views/home/create_new_routes/home_controller.dart';
 import 'home_screen_map.dart';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
 class Homescreen extends StatelessWidget {
   Homescreen({super.key});
@@ -29,21 +33,44 @@ class Homescreen extends StatelessWidget {
       extendBody: true,
       extendBodyBehindAppBar: true,
       bottomNavigationBar: const CustomNavbar(),
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          image: DecorationImage(
-            image: AssetImage(ImageManager.mapBackground),
-            fit: BoxFit.cover,
+      body: Stack(
+        children: [
+          Container(
+            width: double.infinity,
+            height: double.infinity,
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage(ImageManager.mapBackground),
+                fit: BoxFit.cover,
+              ),
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: isLandscape
+                  ? _buildLandscapeLayout(context)
+                  : _buildPortraitLayout(context),
+            ),
           ),
-        ),
-        child: SafeArea(
-          bottom: false,
-          child: isLandscape
-              ? _buildLandscapeLayout(context)
-              : _buildPortraitLayout(context),
-        ),
+          Obx(() {
+            if (_ctrl.isCreating.value) {
+              return Container(
+                color: Colors.black.withOpacity(0.7),
+                child: const Center(
+                  child: Text(
+                    'Loading .....',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                    ),
+                  ),
+                ),
+              );
+            }
+            return const SizedBox.shrink();
+          }),
+        ],
       ),
     );
   }
@@ -235,6 +262,7 @@ class Homescreen extends StatelessWidget {
         children: [
           Expanded(
             child: TextField(
+              controller: _ctrl.routeNameController,
               decoration: InputDecoration(
                 border: InputBorder.none,
                 contentPadding: EdgeInsets.symmetric(
@@ -385,16 +413,124 @@ class Homescreen extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildActionButton(context, SvgManager.importWhite, finalWidth),
-              _buildActionButton(
-                  context, SvgManager.editPencilWhite, finalWidth),
-              _buildActionButton(context, SvgManager.micWhite, finalWidth),
-              _buildActionButton(context, SvgManager.cameraWhite, finalWidth),
+              _buildActionButton(context, SvgManager.importWhite, finalWidth, _pickFile),
+              _buildActionButton(context, SvgManager.editPencilWhite, finalWidth, () => _showEditDialog(context)),
+              _buildActionButton(context, SvgManager.micWhite, finalWidth, () => _showMicDialog(context)),
+              _buildActionButton(context, SvgManager.cameraWhite, finalWidth, _takePhoto),
             ],
           ),
         ),
       );
     });
+  }
+
+  Future<void> _pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+    );
+    if (result != null && result.files.single.path != null) {
+      _ctrl.permitFile.value = File(result.files.single.path!);
+      Get.snackbar('Success', 'File attached successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  Future<void> _takePhoto() async {
+    final ImagePicker picker = ImagePicker();
+    final XFile? image = await picker.pickImage(source: ImageSource.camera);
+    if (image != null) {
+      _ctrl.permitFile.value = File(image.path);
+      Get.snackbar('Success', 'Photo attached successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+    }
+  }
+
+  void _showEditDialog(BuildContext context) {
+    TextEditingController textController = TextEditingController(text: _ctrl.permitText.value);
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: const Color(0xFF0B1129),
+        title: const Text('Edit Permit Text', style: TextStyle(color: Colors.white)),
+        content: TextField(
+          controller: textController,
+          style: const TextStyle(color: Colors.white),
+          decoration: const InputDecoration(
+            hintText: 'Type your permit text...',
+            hintStyle: TextStyle(color: Colors.white54),
+          ),
+          maxLines: 3,
+        ),
+        actions: [
+          TextButton(onPressed: () => Get.back(), child: const Text('Cancel', style: TextStyle(color: Colors.white))),
+          TextButton(
+            onPressed: () {
+              _ctrl.permitText.value = textController.text;
+              Get.back();
+              Get.snackbar('Success', 'Text saved successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+            }, 
+            child: Text('Done', style: TextStyle(color: AppColors.orange))
+          ),
+        ],
+      )
+    );
+  }
+
+  void _showMicDialog(BuildContext context) {
+    stt.SpeechToText speech = stt.SpeechToText();
+    RxBool isListening = false.obs;
+    RxString spokenText = _ctrl.permitText.value.obs;
+
+    Get.dialog(
+      AlertDialog(
+        backgroundColor: const Color(0xFF0B1129),
+        title: const Text('Voice to Text', style: TextStyle(color: Colors.white)),
+        content: Obx(() => Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(spokenText.value.isEmpty ? 'Tap mic and speak...' : spokenText.value, 
+                 style: const TextStyle(color: Colors.white)),
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: () async {
+                if (!isListening.value) {
+                  bool available = await speech.initialize();
+                  if (available) {
+                    isListening.value = true;
+                    speech.listen(onResult: (val) {
+                      spokenText.value = val.recognizedWords;
+                    });
+                  } else {
+                    Get.snackbar('Error', 'Microphone permission denied', backgroundColor: Colors.red, colorText: Colors.white);
+                  }
+                } else {
+                  isListening.value = false;
+                  speech.stop();
+                }
+              },
+              child: CircleAvatar(
+                radius: 30,
+                backgroundColor: isListening.value ? Colors.red : AppColors.orange,
+                child: Icon(isListening.value ? Icons.mic : Icons.mic_none, color: Colors.white, size: 30),
+              ),
+            )
+          ],
+        )),
+        actions: [
+          TextButton(onPressed: () {
+            speech.stop();
+            Get.back();
+          }, child: const Text('Cancel', style: TextStyle(color: Colors.white))),
+          TextButton(
+            onPressed: () {
+              speech.stop();
+              _ctrl.permitText.value = spokenText.value;
+              Get.back();
+              Get.snackbar('Success', 'Voice text saved', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+            }, 
+            child: Text('Done', style: TextStyle(color: AppColors.orange))
+          ),
+        ],
+      )
+    );
   }
 
   Widget _buildContinueButton(BuildContext context) {
@@ -407,18 +543,16 @@ class Homescreen extends StatelessWidget {
         backgroundColor: AppColors.orange,
         borderRadius: 13,
         onPressed: () {
-          Get.toNamed(AppRoutes.confirmYourRoutes);
+          _ctrl.submitCreateRoute();
         },
       ),
     );
   }
 
   Widget _buildActionButton(
-      BuildContext context, String svgPath, double width) {
+      BuildContext context, String svgPath, double width, VoidCallback onTap) {
     return GestureDetector(
-      onTap: () {
-        // TODO: Implement action
-      },
+      onTap: onTap,
       child: Container(
         width: width,
         height: context.h(46),

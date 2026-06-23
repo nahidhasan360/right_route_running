@@ -6,7 +6,7 @@ class HomeApiConstant {
 
 
   static const String createRoute = "/navigation/create-route/";
-
+  static const String routePost = "/route/";
+  static const String updateRouteName = "/route/"; // Will append {id}/update-name/
 
 }
-
