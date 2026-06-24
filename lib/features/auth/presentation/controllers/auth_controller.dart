@@ -85,7 +85,13 @@ class AuthController extends GetxController {
         if (isBusinessOwner) {
           Get.offAllNamed(AppRoutes.teamManager);
         } else {
-          Get.offAllNamed(AppRoutes.homeScreen);
+          String? lastRoute = AuthService.getLastRoute();
+          if (lastRoute != null && lastRoute.isNotEmpty) {
+            Map<String, dynamic>? lastArgs = AuthService.getLastRouteArgs();
+            Get.offAllNamed(lastRoute, arguments: lastArgs);
+          } else {
+            Get.offAllNamed(AppRoutes.homeScreen);
+          }
         }
       } else {
         // Route based on device trust status

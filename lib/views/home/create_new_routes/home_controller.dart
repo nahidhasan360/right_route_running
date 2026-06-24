@@ -6,6 +6,7 @@ import 'package:dio/dio.dart';
 import 'package:right_routes/core/routes/all_routes.dart';
 import 'package:right_routes/views/home/home_api_constant/home_api_constant.dart';
 import 'package:right_routes/core/constants/services/api_client.dart';
+import 'package:right_routes/core/constants/services/auth_service.dart';
 
 // ─── Model ───────────────────────────────────────────────────────────────────
 class DraftRouteModel {
@@ -43,6 +44,7 @@ class CreateRouteService {
     }
     return 'Server error';
   }
+
   static Future<Map<String, dynamic>> createRoute({
     required String name,
     required String startLocation,
@@ -60,7 +62,7 @@ class CreateRouteService {
       );
 
       debugPrint('🚀 [CreateRoute] Requesting: $url');
-      
+
       Map<String, dynamic> dataMap = {
         'name': name,
         'start_location': startLocation,
@@ -90,7 +92,8 @@ class CreateRouteService {
       debugPrint('✅ [CreateRoute] Response Status: ${response.statusCode}');
       debugPrint('📄 [CreateRoute] Response Data: ${response.data}');
 
-      final body = response.data is String ? jsonDecode(response.data) : response.data;
+      final body =
+          response.data is String ? jsonDecode(response.data) : response.data;
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
@@ -103,7 +106,8 @@ class CreateRouteService {
         return {
           'success': false,
           'statusCode': response.statusCode,
-          'message': body['message'] ?? body['detail'] ?? 'Failed to create route',
+          'message':
+              body['message'] ?? body['detail'] ?? 'Failed to create route',
         };
       }
     } catch (e) {
@@ -130,7 +134,7 @@ class CreateRouteService {
       );
 
       debugPrint('🚀 [UpdateRouteName] Requesting: $url');
-      
+
       FormData formData = FormData.fromMap({
         'name': newName,
       });
@@ -144,7 +148,8 @@ class CreateRouteService {
       debugPrint('✅ [UpdateRouteName] Response Status: ${response.statusCode}');
       debugPrint('📄 [UpdateRouteName] Response Data: ${response.data}');
 
-      final body = response.data is String ? jsonDecode(response.data) : response.data;
+      final body =
+          response.data is String ? jsonDecode(response.data) : response.data;
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
@@ -155,7 +160,9 @@ class CreateRouteService {
         return {
           'success': false,
           'statusCode': response.statusCode,
-          'message': body['message'] ?? body['detail'] ?? 'Failed to update route name',
+          'message': body['message'] ??
+              body['detail'] ??
+              'Failed to update route name',
         };
       }
     } catch (e) {
@@ -172,9 +179,11 @@ class CreateRouteService {
     }
   }
 
-  static Future<Map<String, dynamic>> fetchPermitStartingPoint(String routeId) async {
+  static Future<Map<String, dynamic>> fetchPermitStartingPoint(
+      String routeId) async {
     try {
-      final url = Uri.parse('${HomeApiConstant.baseUrl}${HomeApiConstant.routePost}$routeId${HomeApiConstant.permitStartingPoint}');
+      final url = Uri.parse(
+          '${HomeApiConstant.baseUrl}${HomeApiConstant.routePost}$routeId${HomeApiConstant.permitStartingPoint}');
       final response = await ApiClient.get(url);
       if (response.statusCode == 200 && response.data['status'] == true) {
         return {
@@ -200,8 +209,9 @@ class CreateRouteService {
     File? permitFile,
   }) async {
     try {
-      final url = Uri.parse('${HomeApiConstant.baseUrl}${HomeApiConstant.routePost}$routeId${HomeApiConstant.routePermit}');
-      
+      final url = Uri.parse(
+          '${HomeApiConstant.baseUrl}${HomeApiConstant.routePost}$routeId${HomeApiConstant.routePermit}');
+
       Map<String, dynamic> dataMap = {
         'start_location': startLocation,
         'start_latitude': startLatitude,
@@ -227,7 +237,8 @@ class CreateRouteService {
         method: 'POST',
       );
 
-      final body = response.data is String ? jsonDecode(response.data) : response.data;
+      final body =
+          response.data is String ? jsonDecode(response.data) : response.data;
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return {
@@ -257,11 +268,11 @@ class HomeController extends GetxController {
   final RxString startLocation = ''.obs;
   final RxString startLat = ''.obs;
   final RxString startLng = ''.obs;
-  
+
   final RxString endLocation = ''.obs;
   final RxString endLat = ''.obs;
   final RxString endLng = ''.obs;
-  
+
   final RxString permitText = ''.obs;
   final Rx<File?> permitFile = Rx<File?>(null);
   final RxString activeAction = ''.obs;
@@ -276,7 +287,64 @@ class HomeController extends GetxController {
   ].obs;
 
   @override
+  void onInit() {
+    super.onInit();
+    _loadDraft();
+    _setupAutoSave();
+  }
+
+  void _setupAutoSave() {
+    routeNameController.addListener(_saveDraft);
+    ever(startLocation, (_) => _saveDraft());
+    ever(startLat, (_) => _saveDraft());
+    ever(startLng, (_) => _saveDraft());
+    ever(endLocation, (_) => _saveDraft());
+    ever(endLat, (_) => _saveDraft());
+    ever(endLng, (_) => _saveDraft());
+    ever(permitText, (_) => _saveDraft());
+    ever(permitFile, (_) => _saveDraft());
+  }
+
+  void _saveDraft() {
+    AuthService.saveDraftRouteData('home', {
+      'routeName': routeNameController.text,
+      'startLocation': startLocation.value,
+      'startLat': startLat.value,
+      'startLng': startLng.value,
+      'endLocation': endLocation.value,
+      'endLat': endLat.value,
+      'endLng': endLng.value,
+      'permitText': permitText.value,
+      'permitFilePath': permitFile.value?.path,
+    });
+  }
+
+  void _loadDraft() {
+    final draft = AuthService.getDraftRouteData('home');
+    if (draft != null) {
+      routeNameController.text = draft['routeName'] ?? '';
+      startLocation.value = draft['startLocation'] ?? '';
+      startLat.value = draft['startLat'] ?? '';
+      startLng.value = draft['startLng'] ?? '';
+      endLocation.value = draft['endLocation'] ?? '';
+      endLat.value = draft['endLat'] ?? '';
+      endLng.value = draft['endLng'] ?? '';
+      permitText.value = draft['permitText'] ?? '';
+
+      final filePath = draft['permitFilePath'];
+      if (filePath != null && filePath.toString().isNotEmpty) {
+        final file = File(filePath.toString());
+        if (file.existsSync()) {
+          permitFile.value = file;
+          activeAction.value = 'import';
+        }
+      }
+    }
+  }
+
+  @override
   void onClose() {
+    routeNameController.removeListener(_saveDraft);
     routeNameController.dispose();
     super.onClose();
   }
@@ -304,22 +372,38 @@ class HomeController extends GetxController {
     final name = routeNameController.text.trim();
     if (name.isEmpty) {
       errorMsg.value = 'Route name is required';
-      Get.snackbar('Error', errorMsg.value, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+      Get.snackbar('Error', errorMsg.value,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 1));
       return;
     }
     if (startLat.value.isEmpty || startLng.value.isEmpty) {
       errorMsg.value = 'Start location is required';
-      Get.snackbar('Error', errorMsg.value, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+      Get.snackbar('Error', errorMsg.value,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 1));
       return;
     }
     if (endLat.value.isEmpty || endLng.value.isEmpty) {
       errorMsg.value = 'End location is required';
-      Get.snackbar('Error', errorMsg.value, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+      Get.snackbar('Error', errorMsg.value,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 1));
       return;
     }
     if (permitText.value.isEmpty && permitFile.value == null) {
       errorMsg.value = 'Document is required';
-      Get.snackbar('Error', errorMsg.value, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+      Get.snackbar('Error', errorMsg.value,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 1));
       return;
     }
 
@@ -329,10 +413,12 @@ class HomeController extends GetxController {
     debugPrint('🔘 [HomeController] Submitting Create Route: $name');
     final result = await CreateRouteService.createRoute(
       name: name,
-      startLocation: startLocation.value.isEmpty ? 'Unknown Start' : startLocation.value,
+      startLocation:
+          startLocation.value.isEmpty ? 'Unknown Start' : startLocation.value,
       startLatitude: startLat.value,
       startLongitude: startLng.value,
-      endLocation: endLocation.value.isEmpty ? 'Unknown End' : endLocation.value,
+      endLocation:
+          endLocation.value.isEmpty ? 'Unknown End' : endLocation.value,
       endLatitude: endLat.value,
       endLongitude: endLng.value,
       permitText: permitText.value,
@@ -342,7 +428,12 @@ class HomeController extends GetxController {
     isCreating.value = false;
 
     if (result['success'] == true) {
-      Get.snackbar('Success', result['message'] ?? 'Route created successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+      AuthService.clearDraftRouteData('home');
+      Get.snackbar('Success', result['message'] ?? 'Route created successfully',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 1));
       Get.toNamed(
         AppRoutes.confirmYourRoutes, // Adjust as needed if the route changes
         arguments: {
@@ -356,7 +447,11 @@ class HomeController extends GetxController {
         msg = 'Error ${result['statusCode']}: $msg';
       }
       errorMsg.value = msg;
-      Get.snackbar('Error', msg, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 2));
+      Get.snackbar('Error', msg,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 2));
     }
   }
 
@@ -364,18 +459,24 @@ class HomeController extends GetxController {
   Future<void> updateRouteName(int routeId, String newName) async {
     if (newName.trim().isEmpty) return;
 
-    final result = await CreateRouteService.updateRouteName(routeId: routeId, newName: newName.trim());
+    final result = await CreateRouteService.updateRouteName(
+        routeId: routeId, newName: newName.trim());
 
     if (result['success'] == true) {
-      Get.snackbar('Success', result['message'] ?? 'Route name updated', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM);
+      Get.snackbar('Success', result['message'] ?? 'Route name updated',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM);
     } else {
       String msg = result['message'] ?? 'Failed to update route name';
       if (result['statusCode'] != null) {
         msg = 'Error ${result['statusCode']}: $msg';
       }
-      Get.snackbar('Error', msg, backgroundColor: Colors.red, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 4));
+      Get.snackbar('Error', msg,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 4));
     }
   }
-
-
 }

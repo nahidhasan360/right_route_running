@@ -327,7 +327,7 @@ class EditConfirmStartYourRoute extends StatelessWidget {
                 // Show waypoints for this permit (same style as main waypoint list)
                 if (permitWaypoints.isNotEmpty &&
                     (isLast
-                        ? !controller.isWaypointsExpanded.value
+                        ? false
                         : (controller.expandedPermits[index] ?? true)))
                   Padding(
                     padding: EdgeInsets.only(top: context.h(4)),

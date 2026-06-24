@@ -11,6 +11,7 @@ import 'package:right_routes/core/constants/services/api_client.dart';
 import 'package:right_routes/core/constants/services/route_permit_service.dart';
 import 'package:right_routes/views/home/home_api_constant/home_api_constant.dart';
 import 'package:right_routes/views/home/create_new_routes/home_controller.dart';
+import 'package:right_routes/utils/map_icon_util.dart';
 import 'package:dio/dio.dart' as dio;
 
 /// Controller for the Confirm & Edit Your Route screen.
@@ -220,7 +221,8 @@ class ConfirmRouteController extends GetxController {
         // Sync HomeController's currentPermitIndex
         try {
           if (Get.isRegistered<HomeController>()) {
-            Get.find<HomeController>().currentPermitIndex.value = permits.length;
+            Get.find<HomeController>().currentPermitIndex.value =
+                permits.length;
           }
         } catch (_) {}
 
@@ -501,6 +503,7 @@ class ConfirmRouteController extends GetxController {
     try {
       final bytes = await rootBundle.load('assets/icons/Map-Pin-orange.png');
       await mapController!.addImage('pin-orange', bytes.buffer.asUint8List());
+      await MapIconUtil.loadStartEndIcons(mapController!);
       _iconsLoaded = true;
     } catch (e) {
       debugPrint('Icon load error: $e');
@@ -521,21 +524,37 @@ class ConfirmRouteController extends GetxController {
       for (int i = 0; i < _waypointPositions.length; i++) {
         final isSelected =
             i < _waypointSelectedStates.length && _waypointSelectedStates[i];
-        final sym = await mapController!.addSymbol(SymbolOptions(
-          geometry: _waypointPositions[i],
-          iconImage: 'pin-orange',
-          iconSize: isSelected ? 0.55 : 0.45,
-          textField: i == 0 ? 'S' : (i == _waypointPositions.length - 1 && _waypointPositions.length > 1 ? 'E' : '$i'),
-          textSize: 12.0,
-          textOffset: const Offset(0, 0.6),
-          textColor: '#FFFFFF',
-          textHaloColor: '#000000',
-          textHaloWidth: 1.8,
-          textHaloBlur: 0.8,
-          textAnchor: 'center',
-          draggable: true,
-        ));
-        _waypointSymbols.add(sym);
+        final isStart = i == 0;
+        final isEnd =
+            i == _waypointPositions.length - 1 && _waypointPositions.length > 1;
+
+        if (isStart || isEnd) {
+          final sym = await mapController!.addSymbol(SymbolOptions(
+            geometry: _waypointPositions[i],
+            iconImage: isStart ? 'start-icon' : 'end-icon',
+            iconSize: isSelected ? 1.2 : 1.0,
+            iconAnchor: 'center',
+            zIndex: 100,
+            draggable: true,
+          ));
+          _waypointSymbols.add(sym);
+        } else {
+          final sym = await mapController!.addSymbol(SymbolOptions(
+            geometry: _waypointPositions[i],
+            iconImage: 'pin-orange',
+            iconSize: isSelected ? 0.55 : 0.45,
+            textField: '$i',
+            textSize: 12.0,
+            textOffset: const Offset(0, 0.6),
+            textColor: '#FFFFFF',
+            textHaloColor: '#000000',
+            textHaloWidth: 1.8,
+            textHaloBlur: 0.8,
+            textAnchor: 'center',
+            draggable: true,
+          ));
+          _waypointSymbols.add(sym);
+        }
         debugPrint(
             '  ✓ Pin #${i + 1} added at ${_waypointPositions[i].latitude}, ${_waypointPositions[i].longitude}');
       }
@@ -781,7 +800,8 @@ class ConfirmRouteController extends GetxController {
       if (waypoints.length >= 2) {
         int insertIndex = waypoints.length - 1;
         waypoints.insert(insertIndex, address);
-        waypointControllers.insert(insertIndex, TextEditingController(text: address));
+        waypointControllers.insert(
+            insertIndex, TextEditingController(text: address));
         _waypointSelectedStates.insert(insertIndex, false);
         waypointIds.insert(insertIndex, newId);
         _waypointPositions.insert(insertIndex, point);

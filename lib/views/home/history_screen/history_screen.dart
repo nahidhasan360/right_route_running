@@ -41,7 +41,6 @@ class HistoryScreen extends StatelessWidget {
               direction: isLandscape ? Axis.horizontal : Axis.vertical,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-
                 // ==========================================
                 // HEADER SECTION
                 // ==========================================
@@ -53,7 +52,6 @@ class HistoryScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-
                       // Logo
                       Center(
                         child: Container(
@@ -71,7 +69,8 @@ class HistoryScreen extends StatelessWidget {
                           ),
                         ),
                       ),
-                      SizedBox(height: isLandscape ? context.s(10) : context.h(18)),
+                      SizedBox(
+                          height: isLandscape ? context.s(10) : context.h(18)),
 
                       // Title
                       Text(
@@ -82,7 +81,8 @@ class HistoryScreen extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                         ),
                       ),
-                      SizedBox(height: isLandscape ? context.s(12) : context.h(22)),
+                      SizedBox(
+                          height: isLandscape ? context.s(12) : context.h(22)),
 
                       // Checkbox + Buttons row
                       Row(
@@ -137,9 +137,7 @@ class HistoryScreen extends StatelessWidget {
                       SizedBox(height: context.h(15)),
                       Divider(color: AppColors.white, thickness: 1),
                       SizedBox(
-                          height: isLandscape
-                              ? context.s(10)
-                              : context.h(5)),
+                          height: isLandscape ? context.s(10) : context.h(5)),
                     ],
                   ),
                 ),
@@ -257,7 +255,8 @@ class HistoryScreen extends StatelessWidget {
     );
   }
 
-  Widget _smallButton(BuildContext context, String text, {VoidCallback? onTap}) {
+  Widget _smallButton(BuildContext context, String text,
+      {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(

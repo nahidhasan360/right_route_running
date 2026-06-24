@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:get/get.dart';
@@ -146,6 +147,62 @@ class AuthService {
     final phone = _prefs?.getString('user_phone');
     print('📤 Getting User Phone: $phone');
     return phone;
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // 📍 APP ROUTE & DRAFT STATE PERSISTENCE
+  // ═══════════════════════════════════════════════════════════
+
+  static Future<void> saveLastRoute(String routeName, {Map<String, dynamic>? arguments}) async {
+    print('💾 Saving Last Route: $routeName');
+    await _prefs?.setString('last_active_route', routeName);
+    if (arguments != null) {
+      await _prefs?.setString('last_active_route_args', jsonEncode(arguments));
+    } else {
+      await _prefs?.remove('last_active_route_args');
+    }
+  }
+
+  static String? getLastRoute() {
+    return _prefs?.getString('last_active_route');
+  }
+
+  static Map<String, dynamic>? getLastRouteArgs() {
+    final argsStr = _prefs?.getString('last_active_route_args');
+    if (argsStr != null && argsStr.isNotEmpty) {
+      try {
+        return jsonDecode(argsStr) as Map<String, dynamic>;
+      } catch (e) {
+        print('❌ Error decoding route args: $e');
+      }
+    }
+    return null;
+  }
+
+  static Future<void> saveDraftRouteData(String key, Map<String, dynamic> data) async {
+    await _prefs?.setString('draft_route_data_$key', jsonEncode(data));
+  }
+
+  static Map<String, dynamic>? getDraftRouteData(String key) {
+    final str = _prefs?.getString('draft_route_data_$key');
+    if (str != null && str.isNotEmpty) {
+      try {
+        return jsonDecode(str) as Map<String, dynamic>;
+      } catch (e) {}
+    }
+    return null;
+  }
+
+  static Future<void> clearDraftRouteData(String key) async {
+    await _prefs?.remove('draft_route_data_$key');
+  }
+
+  static Future<void> clearAllDraftsAndRoutes() async {
+    await _prefs?.remove('last_active_route');
+    await _prefs?.remove('last_active_route_args');
+    // Clear known draft keys
+    await _prefs?.remove('draft_route_data_home');
+    await _prefs?.remove('draft_route_data_after_confirm');
   }
 
   // ═══════════════════════════════════════════════════════════

@@ -32,7 +32,7 @@ class _HomescreenState extends State<Homescreen> {
     _ctrl = Get.isRegistered<HomeController>()
         ? Get.find<HomeController>()
         : Get.put(HomeController(), permanent: true);
-    
+
     // Clear old data so previous route's start point doesn't auto-draw
     _ctrl.resetNewRouteData();
   }
@@ -276,12 +276,21 @@ class _HomescreenState extends State<Homescreen> {
             padding: EdgeInsets.only(right: context.w(6)),
             child: GestureDetector(
               onTap: () {
-                _showMicDialog(context, title: 'Route Name (Voice)', onDone: (text) {
+                _showMicDialog(context, title: 'Route Name (Voice)',
+                    onDone: (text) {
                   if (text.isNotEmpty) {
                     _ctrl.routeNameController.text = text;
-                    Get.snackbar('Success', 'Route name updated from voice', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+                    Get.snackbar('Success', 'Route name updated from voice',
+                        backgroundColor: Colors.green,
+                        colorText: Colors.white,
+                        snackPosition: SnackPosition.BOTTOM,
+                        duration: const Duration(seconds: 1));
                   } else {
-                    Get.snackbar('Warning', 'No voice text captured', backgroundColor: Colors.orange, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+                    Get.snackbar('Warning', 'No voice text captured',
+                        backgroundColor: Colors.orange,
+                        colorText: Colors.white,
+                        snackPosition: SnackPosition.BOTTOM,
+                        duration: const Duration(seconds: 1));
                   }
                 });
               },
@@ -412,21 +421,33 @@ class _HomescreenState extends State<Homescreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildActionButton(context, SvgManager.importWhite, finalWidth, _pickFile, 'import'),
-              _buildActionButton(context, SvgManager.editPencilWhite, finalWidth, () => _showEditDialog(context), 'edit'),
+              _buildActionButton(context, SvgManager.importWhite, finalWidth,
+                  _pickFile, 'import'),
+              _buildActionButton(context, SvgManager.editPencilWhite,
+                  finalWidth, () => _showEditDialog(context), 'edit'),
               _buildActionButton(context, SvgManager.micWhite, finalWidth, () {
-                _showMicDialog(context, title: 'Permit Text (Voice)', onDone: (text) {
+                _showMicDialog(context, title: 'Permit Text (Voice)',
+                    onDone: (text) {
                   if (text.isNotEmpty) {
                     _ctrl.permitText.value = text;
                     _ctrl.permitFile.value = null;
                     _ctrl.activeAction.value = 'mic';
-                    Get.snackbar('Success', 'Voice text saved', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+                    Get.snackbar('Success', 'Voice text saved',
+                        backgroundColor: Colors.green,
+                        colorText: Colors.white,
+                        snackPosition: SnackPosition.BOTTOM,
+                        duration: const Duration(seconds: 1));
                   } else {
-                    Get.snackbar('Warning', 'No voice text captured', backgroundColor: Colors.orange, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+                    Get.snackbar('Warning', 'No voice text captured',
+                        backgroundColor: Colors.orange,
+                        colorText: Colors.white,
+                        snackPosition: SnackPosition.BOTTOM,
+                        duration: const Duration(seconds: 1));
                   }
                 });
               }, 'mic'),
-              _buildActionButton(context, SvgManager.cameraWhite, finalWidth, _takePhoto, 'camera'),
+              _buildActionButton(context, SvgManager.cameraWhite, finalWidth,
+                  _takePhoto, 'camera'),
             ],
           ),
         ),
@@ -443,7 +464,11 @@ class _HomescreenState extends State<Homescreen> {
       _ctrl.permitFile.value = File(result.files.single.path!);
       _ctrl.permitText.value = '';
       _ctrl.activeAction.value = 'import';
-      Get.snackbar('Success', 'File attached successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+      Get.snackbar('Success', 'File attached successfully',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 1));
     }
   }
 
@@ -454,30 +479,37 @@ class _HomescreenState extends State<Homescreen> {
       _ctrl.permitFile.value = File(image.path);
       _ctrl.permitText.value = '';
       _ctrl.activeAction.value = 'camera';
-      Get.snackbar('Success', 'Photo attached successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
+      Get.snackbar('Success', 'Photo attached successfully',
+          backgroundColor: Colors.green,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.BOTTOM,
+          duration: const Duration(seconds: 1));
     }
   }
 
   void _showEditDialog(BuildContext context) {
-    TextEditingController textController = TextEditingController(text: _ctrl.permitText.value);
-    Get.dialog(
-      AlertDialog(
-        backgroundColor: AppColors.darkGray,
-        title: const Text('Edit Permit Text', style: TextStyle(color: Colors.white)),
-        content: TextField(
-          controller: textController,
-          style: const TextStyle(color: Colors.white),
-          decoration: const InputDecoration(
-            hintText: 'Type your permit text...',
-            hintStyle: TextStyle(color: Colors.white54),
-          ),
-          minLines: 1,
-          maxLines: null,
-          keyboardType: TextInputType.multiline,
+    TextEditingController textController =
+        TextEditingController(text: _ctrl.permitText.value);
+    Get.dialog(AlertDialog(
+      backgroundColor: AppColors.darkGray,
+      title:
+          const Text('Edit Permit Text', style: TextStyle(color: Colors.white)),
+      content: TextField(
+        controller: textController,
+        style: const TextStyle(color: Colors.white),
+        decoration: const InputDecoration(
+          hintText: 'Type your permit text...',
+          hintStyle: TextStyle(color: Colors.white54),
         ),
-        actions: [
-          TextButton(onPressed: () => Get.back(), child: const Text('Cancel', style: TextStyle(color: Colors.white))),
-          TextButton(
+        minLines: 1,
+        maxLines: null,
+        keyboardType: TextInputType.multiline,
+      ),
+      actions: [
+        TextButton(
+            onPressed: () => Get.back(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white))),
+        TextButton(
             onPressed: () {
               _ctrl.permitText.value = textController.text;
               if (textController.text.isNotEmpty) {
@@ -487,116 +519,157 @@ class _HomescreenState extends State<Homescreen> {
                 _ctrl.activeAction.value = '';
               }
               Get.back();
-              Get.snackbar('Success', 'Text saved successfully', backgroundColor: Colors.green, colorText: Colors.white, snackPosition: SnackPosition.BOTTOM, duration: const Duration(seconds: 1));
-            }, 
-            child: Text('Done', style: TextStyle(color: AppColors.orange))
-          ),
-        ],
-      )
-    );
+              Get.snackbar('Success', 'Text saved successfully',
+                  backgroundColor: Colors.green,
+                  colorText: Colors.white,
+                  snackPosition: SnackPosition.BOTTOM,
+                  duration: const Duration(seconds: 1));
+            },
+            child: Text('Done', style: TextStyle(color: AppColors.orange))),
+      ],
+    ));
   }
 
-  void _showMicDialog(BuildContext context, {required String title, required Function(String) onDone}) {
+  void _showMicDialog(BuildContext context,
+      {required String title, required Function(String) onDone}) {
     stt.SpeechToText speech = stt.SpeechToText();
     RxBool isListening = false.obs;
     RxString spokenText = ''.obs;
 
-    Get.dialog(
-      AlertDialog(
-        backgroundColor: AppColors.darkGray,
-        title: Text(title, style: const TextStyle(color: Colors.white)),
-        content: Obx(() => Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(spokenText.value.isEmpty ? 'Tap mic and speak...' : spokenText.value, 
-                 style: const TextStyle(color: Colors.white)),
-            const SizedBox(height: 20),
-            GestureDetector(
-              onTap: () async {
-                if (!isListening.value) {
-                  bool available = await speech.initialize();
-                  if (available) {
-                    isListening.value = true;
-                    speech.listen(onResult: (val) {
-                      spokenText.value = val.recognizedWords;
-                    });
+    Get.dialog(AlertDialog(
+      backgroundColor: AppColors.darkGray,
+      title: Text(title, style: const TextStyle(color: Colors.white)),
+      content: Obx(() => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                  spokenText.value.isEmpty
+                      ? 'Tap mic and speak...'
+                      : spokenText.value,
+                  style: const TextStyle(color: Colors.white)),
+              const SizedBox(height: 20),
+              GestureDetector(
+                onTap: () async {
+                  if (!isListening.value) {
+                    bool available = await speech.initialize();
+                    if (available) {
+                      isListening.value = true;
+                      speech.listen(onResult: (val) {
+                        spokenText.value = val.recognizedWords;
+                      });
+                    } else {
+                      Get.snackbar('Error', 'Microphone permission denied',
+                          backgroundColor: Colors.red,
+                          colorText: Colors.white,
+                          duration: const Duration(seconds: 1));
+                    }
                   } else {
-                    Get.snackbar('Error', 'Microphone permission denied', backgroundColor: Colors.red, colorText: Colors.white, duration: const Duration(seconds: 1));
+                    isListening.value = false;
+                    speech.stop();
                   }
-                } else {
-                  isListening.value = false;
-                  speech.stop();
-                }
-              },
-              child: CircleAvatar(
-                radius: 30,
-                backgroundColor: isListening.value ? Colors.red : AppColors.orange,
-                child: Icon(isListening.value ? Icons.mic : Icons.mic_none, color: Colors.white, size: 30),
-              ),
-            )
-          ],
-        )),
-        actions: [
-          TextButton(onPressed: () {
-            speech.stop();
-            Get.back();
-          }, child: const Text('Cancel', style: TextStyle(color: Colors.white))),
-          TextButton(
+                },
+                child: CircleAvatar(
+                  radius: 30,
+                  backgroundColor:
+                      isListening.value ? Colors.red : AppColors.orange,
+                  child: Icon(isListening.value ? Icons.mic : Icons.mic_none,
+                      color: Colors.white, size: 30),
+                ),
+              )
+            ],
+          )),
+      actions: [
+        TextButton(
+            onPressed: () {
+              speech.stop();
+              Get.back();
+            },
+            child: const Text('Cancel', style: TextStyle(color: Colors.white))),
+        TextButton(
             onPressed: () {
               speech.stop();
               Get.back();
               onDone(spokenText.value);
-            }, 
-            child: const Text('Done', style: TextStyle(color: AppColors.orange))
-          ),
-        ],
-      )
-    );
+            },
+            child:
+                const Text('Done', style: TextStyle(color: AppColors.orange))),
+      ],
+    ));
   }
+
 
   Widget _buildContinueButton(BuildContext context) {
     return Center(
       child: Obx(() => CustomButton(
-        text: _ctrl.isCreating.value ? 'Loading...' : 'CONTINUE',
-        width: _ctrl.isCreating.value ? context.w(160) : context.w(150),
-        height: context.h(50),
-        fontSize: _ctrl.isCreating.value ? context.sp(22) : context.sp(26),
-        backgroundColor: AppColors.orange,
-        borderRadius: 13,
-        onPressed: _ctrl.isCreating.value 
-          ? () {} 
-          : () {
-              _ctrl.submitCreateRoute();
-            },
-      )),
+            text: _ctrl.isCreating.value ? 'Loading...' : 'CONTINUE',
+            width: _ctrl.isCreating.value ? context.w(160) : context.w(150),
+            height: context.h(50),
+            fontSize: _ctrl.isCreating.value ? context.sp(22) : context.sp(26),
+            backgroundColor: AppColors.orange,
+            borderRadius: 13,
+            onPressed: _ctrl.isCreating.value
+                ? () {}
+                : () {
+                    _ctrl.submitCreateRoute();
+                  },
+          )),
     );
   }
 
-  Widget _buildActionButton(
-      BuildContext context, String svgPath, double width, VoidCallback onTap, String actionType) {
-    return Obx(() => GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: width,
-        height: context.h(46),
-        decoration: BoxDecoration(
-          color: _ctrl.activeAction.value == actionType 
-              ? AppColors.orange.withOpacity(0.5) // Darker / "pressed" appearance
-              : AppColors.orange,
-          borderRadius: BorderRadius.circular(context.r(9)),
-        ),
-        child: Center(
-          child: SvgPicture.asset(
-            svgPath,
-            width: context.w(35),
-            height: context.h(35),
-            colorFilter: const ColorFilter.mode(
-              Colors.white,
-              BlendMode.srcIn,
+  Widget _buildActionButton(BuildContext context, String svgPath, double width,
+      VoidCallback onTap, String actionType) {
+    return Obx(() {
+      final isActive = _ctrl.activeAction.value == actionType && 
+          (_ctrl.permitFile.value != null || _ctrl.permitText.value.isNotEmpty);
+      return Stack(
+        clipBehavior: Clip.none,
+        children: [
+          GestureDetector(
+            onTap: onTap,
+            child: Container(
+              width: width,
+              height: context.h(46),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? AppColors.orange.withOpacity(0.5)
+                    : AppColors.orange,
+                borderRadius: BorderRadius.circular(context.r(9)),
+              ),
+              child: Center(
+                child: SvgPicture.asset(
+                  svgPath,
+                  width: context.w(35),
+                  height: context.h(35),
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
-      ),
-    ));
+          if (isActive)
+            Positioned(
+              top: -context.h(6),
+              left: -context.w(6),
+              child: GestureDetector(
+                onTap: () {
+                  _ctrl.permitFile.value = null;
+                  _ctrl.permitText.value = '';
+                  _ctrl.activeAction.value = '';
+                },
+                child: Container(
+                  padding: EdgeInsets.all(context.s(2)),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(Icons.close, color: Colors.white, size: context.sp(12)),
+                ),
+              ),
+            ),
+        ],
+      );
+    });
   }
 }

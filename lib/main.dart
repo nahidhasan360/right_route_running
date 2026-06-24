@@ -123,6 +123,33 @@ class MyApp extends StatelessWidget {
             initialRoute: initialRoute,
             navigatorKey: Get.key,
             getPages: AppRoutes.routes,
+            routingCallback: (routing) {
+              if (routing != null && routing.current.isNotEmpty) {
+                if (routing.isDialog != true && routing.isBottomSheet != true) {
+                  final currentRoute = routing.current;
+                  final persistableRoutes = [
+                    AppRoutes.homeScreen,
+                    AppRoutes.teamManager,
+                    AppRoutes.accountScreen,
+                    AppRoutes.historyScreen,
+                    AppRoutes.confirmYourRoutes,
+                    AppRoutes.createRouteAfterConfirmRoute,
+                  ];
+                  
+                  if (persistableRoutes.contains(currentRoute)) {
+                    try {
+                      Map<String, dynamic>? args;
+                      if (routing.args is Map) {
+                        args = Map<String, dynamic>.from(routing.args as Map);
+                      }
+                      AuthService.saveLastRoute(currentRoute, arguments: args);
+                    } catch (e) {
+                      print('Could not save route args: $e');
+                    }
+                  }
+                }
+              }
+            },
           ),
         );
       },
