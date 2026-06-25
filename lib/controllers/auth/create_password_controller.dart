@@ -19,7 +19,7 @@ class CreatePasswordController extends GetxController {
   final RxBool isPasswordHidden = true.obs;
   final RxBool isSixChars = false.obs;
   final RxBool hasNumberOrSpecial = false.obs;
-  final RxBool useTouchId = true.obs;
+  final RxBool useTouchId = false.obs;
   final RxBool agreeTerms = false.obs;
   final RxBool agreePrivacy = false.obs;
 
@@ -38,6 +38,8 @@ class CreatePasswordController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    
+    useTouchId.value = AuthService.getTouchIDEnabled();
 
     final args = Get.arguments;
     if (args != null) {
@@ -139,6 +141,14 @@ class CreatePasswordController extends GetxController {
       if (result['success'] == true) {
         final data = result['data'];
         await AuthService.saveUserEmail(email.value);
+
+        if (useTouchId.value) {
+          await AuthService.saveTouchIDEnabled(true);
+          await AuthService.saveUserPassword(password.value);
+        } else {
+          await AuthService.saveTouchIDEnabled(false);
+          await AuthService.removeUserPassword();
+        }
 
         _showSuccess(data['detail'] ?? 'Account created successfully!');
 

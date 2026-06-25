@@ -7,10 +7,6 @@ import 'package:right_routes/views/authentication/login_account/login_api_servic
 class OtpVerificationController extends GetxController {
   final LoginApiService _apiService = LoginApiService();
 
-  final TextEditingController otpController = TextEditingController();
-  
-  // pinResetKey is incremented to trigger a fresh empty pin field on resend
-  final RxInt pinResetKey = 0.obs;
   final RxString otp = ''.obs;
   final RxBool isVerifying = false.obs;
   final RxBool isResending = false.obs;
@@ -27,7 +23,6 @@ class OtpVerificationController extends GetxController {
 
   @override
   void onClose() {
-    otpController.dispose();
     super.onClose();
   }
 
@@ -81,11 +76,15 @@ class OtpVerificationController extends GetxController {
         _showSuccess('Verification successful!');
         await Future.delayed(const Duration(milliseconds: 800));
 
-        // Check if API returned tokens (Registration Flow)
-        if (data['access'] != null) {
-          await AuthService.saveAccessToken(data['access']);
-          if (data['refresh'] != null) {
-            await AuthService.saveRefreshToken(data['refresh']);
+        // Robust token extraction
+        final accessToken = data['access'] ?? (data['tokens'] != null ? data['tokens']['access'] : null);
+        final refreshToken = data['refresh'] ?? (data['tokens'] != null ? data['tokens']['refresh'] : null);
+
+        // Check if API returned tokens
+        if (accessToken != null) {
+          await AuthService.saveAccessToken(accessToken);
+          if (refreshToken != null) {
+            await AuthService.saveRefreshToken(refreshToken);
           }
 
           if (data['user'] != null) {
@@ -96,7 +95,12 @@ class OtpVerificationController extends GetxController {
           }
 
           await AuthService.saveLoginStatus(true);
-          Get.offAllNamed(AppRoutes.weLoggedYou);
+          
+          if (purpose == 'REGISTER') {
+            Get.offAllNamed(AppRoutes.homeScreen);
+          } else {
+            Get.offAllNamed(AppRoutes.weLoggedYou);
+          }
         } else {
           // Navigate based on next_step from the backend (Login Flow)
           if (nextStep == 'SUBMIT_PASSWORD') {
@@ -132,8 +136,6 @@ class OtpVerificationController extends GetxController {
       final result = await _apiService.sendOtp(email: email, purpose: purpose);
 
       if (result['success'] == true) {
-        otpController.clear();
-        pinResetKey.value++; // triggers PinCodeTextField to rebuild fresh
         otp.value = '';
         _showSuccess('OTP has been resent to your email');
       } else {

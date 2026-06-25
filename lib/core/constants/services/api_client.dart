@@ -68,11 +68,13 @@ class ApiClient {
   static Future<Response> delete(
     Uri url, {
     Map<String, String>? headers,
+    Object? body,
     bool requireAuth = true,
   }) async {
     return _request(
       (options) => _dio.deleteUri(
         url,
+        data: body,
         options: options,
       ),
       requireAuth: requireAuth,

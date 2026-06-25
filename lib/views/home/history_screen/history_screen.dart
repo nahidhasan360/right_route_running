@@ -191,13 +191,25 @@ class HistoryScreen extends StatelessWidget {
 
                       // List
                       Expanded(
-                        child: Obx(
-                          () => ListView.builder(
+                        child: Obx(() {
+                          if (controller.isLoading.value) {
+                            return const Center(
+                              child: CircularProgressIndicator(color: AppColors.orange),
+                            );
+                          }
+                          if (controller.routes.isEmpty) {
+                            return Center(
+                              child: Text(
+                                'No routes found',
+                                style: TextStyle(color: Colors.white, fontSize: context.sp(16)),
+                              ),
+                            );
+                          }
+                          return ListView.builder(
                             itemCount: controller.routes.length,
-                            itemBuilder: (context, index) =>
-                                _routeItem(context, index),
-                          ),
-                        ),
+                            itemBuilder: (context, index) => _routeItem(context, index),
+                          );
+                        }),
                       ),
                     ],
                   ),
@@ -301,7 +313,7 @@ class HistoryScreen extends StatelessWidget {
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.start,
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Checkbox
                 GestureDetector(
@@ -336,7 +348,7 @@ class HistoryScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        "${route.id} ${route.date}",
+                        "${index + 1}. ${route.date}",
                         style: TextStyle(
                           color: route.isSelected.value
                               ? const Color(0xFFFF6B35)

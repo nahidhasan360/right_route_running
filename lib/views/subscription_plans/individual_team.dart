@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:right_routes/utils/responsive_ext.dart';
 import 'package:get/get.dart';
 import 'package:right_routes/core/routes/all_routes.dart';
 import 'package:right_routes/utils/colors.dart';
@@ -25,15 +25,15 @@ class IndividualTeam extends StatelessWidget {
         ),
         child: SafeArea(
           child: Padding(
-            padding: EdgeInsets.symmetric(horizontal: 15.w),
+            padding: EdgeInsets.symmetric(horizontal: context.w(15)),
             child: Column(
               children: [
-                SizedBox(height: 20.h),
+                SizedBox(height: context.h(20)),
                 /// Logo
                 Center(
                   child: Container(
-                    width: 225.w,
-                    height: 112.h,
+                    width: context.w(225),
+                    height: context.h(112),
                     decoration: BoxDecoration(
                       image: DecorationImage(
                         image: AssetImage(ImageManager.splashScreenLogo),
@@ -46,64 +46,64 @@ class IndividualTeam extends StatelessWidget {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      SizedBox(height: 29.h),
+                      SizedBox(height: context.h(29)),
 
                       /// Title
                       Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 16.w),
+                        padding: EdgeInsets.symmetric(horizontal: context.w(16)),
                         child: Text(
                           'INDIVIDUAL OR TEAM?',
                           style: TextStyle(
                             color: Colors.white,
-                            fontSize: 32.sp,
+                            fontSize: context.sp(32),
                             fontFamily: 'League Gothic',
                             fontWeight: FontWeight.w400,
-                            height: 0.88.h,
+                            height: context.h(0.88),
                             letterSpacing: 1,
                           ),
                           textAlign: TextAlign.center,
                         ),
                       ),
-                      SizedBox(height: 20.h),
+                      SizedBox(height: context.h(20)),
 
                       /// Subtitle
                       Text(
                         'Choose an option to start your 7-day free trial and begin automating your routes. Cancel anytime ',
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 18.sp,
+                          fontSize: context.sp(18),
                           fontFamily: 'Lato',
                           fontWeight: FontWeight.w500,
                         ),
                         textAlign: TextAlign.center,
                       ),
-                      SizedBox(height: 20.h),
+                      SizedBox(height: context.h(20)),
 
                       /// Individual Button
                       ButtonReusable(
                         text: "INDIVIDUAL",
-                        width: 250.w,
-                        height: 55.h,
-                        fontSize: 24.sp,
+                        width: context.w(250),
+                        height: context.h(55),
+                        fontSize: context.sp(24),
                         onPressed: () {
                           // planController.selectIndividual();
                           Get.toNamed(AppRoutes.chooseYourPlan);
                         },
                       ),
-                      SizedBox(height: 23.h),
+                      SizedBox(height: context.h(23)),
 
                       /// Team Button
                       ButtonReusable(
                         text: "TEAM",
-                        width: 250.w,
-                        height: 55.h,
-                        fontSize: 24.sp,
+                        width: context.w(250),
+                        height: context.h(55),
+                        fontSize: context.sp(24),
                         onPressed: () {
                           // planController.selectIndividual();
                           Get.toNamed(AppRoutes.chooseATeamPlan);
                         },
                       ),
-                      SizedBox(height: 206.h),
+                      SizedBox(height: context.h(206)),
 
                       /// Restore Subscription
                       TextButton(
@@ -118,27 +118,27 @@ class IndividualTeam extends StatelessWidget {
                               'Already a subscriber?',
                               style: TextStyle(
                                 color: Colors.white,
-                                fontSize: 16.sp,
+                                fontSize: context.sp(16),
                                 fontFamily: 'Lato',
                                 fontWeight: FontWeight.w500,
-                                height: 1.75.h,
+                                height: context.h(1.75),
                               ),
                             ),
                             Text(
                               'RESTORE SUBSCRIPTION',
                               style: TextStyle(
                                 color:AppColors.purple,
-                                fontSize: 20.sp,
+                                fontSize: context.sp(20),
                                 fontFamily: 'League Gothic',
                                 fontWeight: FontWeight.w400,
-                                height: 1.40.h,
+                                height: context.h(1.40),
                                 letterSpacing: 1,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      SizedBox(height: 49.h),
+                      SizedBox(height: context.h(49)),
                     ],
                   ),
                 ),

@@ -188,9 +188,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
 
         SizedBox(height: context.h(28)),
 
-        /// PIN CODE FIELD — Obx+ValueKey so orientation rebuilds don't dispose controllers
-        Obx(() => Builder(
-          key: ValueKey('pin_${controller.pinResetKey.value}'),
+        /// PIN CODE FIELD
+        Builder(
           builder: (ctx) {
             final orientation = MediaQuery.of(ctx).orientation;
             final screenW = MediaQuery.of(ctx).size.width;
@@ -203,7 +202,6 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
             return PinCodeTextField(
               length: 6,
               appContext: ctx,
-              controller: controller.otpController,
               animationType: AnimationType.fade,
               keyboardType: TextInputType.number,
               obscureText: false,
@@ -233,7 +231,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
               },
             );
           },
-        )),
+        ),
 
         SizedBox(height: context.h(18)),
 
@@ -249,6 +247,9 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                   },
             isLoading: controller.isVerifying.value,
             showSpinner: false,
+            backgroundColor: controller.otp.value.length == 6
+                ? AppColors.orange
+                : AppColors.medGray,
             height: context.h(58),
           ),
         ),

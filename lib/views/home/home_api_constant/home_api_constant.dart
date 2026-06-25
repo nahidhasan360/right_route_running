@@ -11,4 +11,10 @@ class HomeApiConstant {
   static const String permitStartingPoint = "/permit-starting-point/";
   static const String routePermit = "/permit/";
 
+  // Team Manager API Endpoints
+  static const String teamMembers = "/team/members/";
+  static const String teamMemberDetails = "/team/member/"; // Append {id}/
+  static const String teamMultipleMembersAdd = "/team/multiple-members-add/";
+  static const String removeTeamMember = "/team/remove-member/";
+
 }

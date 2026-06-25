@@ -797,8 +797,7 @@ class EditConfirmStartYourRoute extends StatelessWidget {
                   child: GestureDetector(
                     onTap: () {
                       FocusScope.of(context).unfocus();
-                      ctrl.selectWaypoint(index);
-                      ctrl.deleteSelectedWaypoint();
+                      ctrl.deleteWaypointAt(index);
                     },
                     child: Icon(Icons.close,
                         color: AppColors.white, size: context.sp(24)),

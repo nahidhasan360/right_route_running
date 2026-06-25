@@ -18,6 +18,14 @@ class EnterEmailController extends GetxController {
   final RxString emailToken = ''.obs;
   final RxString userEmail = ''.obs;
 
+  @override
+  void onInit() {
+    super.onInit();
+    emailController.addListener(() {
+      email.value = emailController.text;
+    });
+  }
+
   Future<void> checkEmail() async {
     if (emailController.text.trim().isEmpty) {
       _showError('Please enter email address');

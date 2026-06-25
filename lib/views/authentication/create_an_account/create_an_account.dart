@@ -58,8 +58,7 @@ class CreateAnAccount extends StatelessWidget {
                         child: Center(
                           child: ConstrainedBox(
                             constraints: BoxConstraints(
-                              maxWidth:
-                                  MediaQuery.of(context).size.width * 0.6,
+                              maxWidth: MediaQuery.of(context).size.width * 0.6,
                             ),
                             child: SingleChildScrollView(
                               physics: const AlwaysScrollableScrollPhysics(),
@@ -97,95 +96,69 @@ class CreateAnAccount extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-                        Text(
-                          'Create an account to continue',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: context.sp(25),
-                            fontFamily: 'Lato',
-                            fontWeight: FontWeight.bold,
-                            // NO context.h
-                            height: 1.12,
-                          ),
-                        ),
-                        SizedBox(height: context.h(18)),
-                        Text(
-                          'Creating an account gives you full functionality, '
-                          'access to your route history, account settings and subscription status.',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: context.sp(18),
-                            fontFamily: 'Lato',
-                            fontWeight: FontWeight.w500,
-                            // NO context.h
-                            height: 1.44,
-                          ),
-                        ),
-                        SizedBox(height: context.h(17)),
-                        Obx(
-                          () => EmailEditWidgets(
-                            email: controller.email.value,
-                            onEditTap: () {
-                              Get.toNamed(AppRoutes.enterEmailScreen);
-                            },
-                          ),
-                        ),
-                        SizedBox(height: context.h(32)),
-                        _buildPasswordField(context),
-                        _buildProgressBar(context),
-                        Obx(
-                          () => Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _ruleTile(
-                                context,
-                                controller.isSixChars.value,
-                                "Use a minimum of six characters ( Case sensitive )",
-                              ),
-                              SizedBox(height: context.h(12)),
-                              _ruleTile(
-                                context,
-                                controller.hasNumberOrSpecial.value,
-                                "Use letters with at least one number or special character",
-                              ),
-                            ],
-                          ),
-                        ),
-                        SizedBox(height: context.h(18)),
-                        Row(
-                          children: [
-                            CustomToggleSwitchAdvanced(
-                              height: context.h(24),
-                              width: context.w(51),
-                              value: troggleController.isEnabled,
-                              onChanged: (val) {
-                                controller.useTouchId.value = val;
-                                print('Touch ID Toggle: $val');
-                              },
-                              activeSvgPath: 'assets/icons/Check-orange.svg',
-                              svgColor: AppColors.orange,
-                              activeColor: const Color(0xFFFF8C42),
-                              inactiveColor: Colors.white.withValues(alpha: 0.3),
-                            ),
-                            SizedBox(width: context.w(7)),
-                            Text(
-                              'Use touch ID',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: context.sp(16),
-                                fontFamily: 'Lato',
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: context.h(21)),
-                        Obx(() => _buildTermsCheckbox(context)),
-                        SizedBox(height: context.h(12)),
-                        Obx(() => _buildPrivacyCheckbox(context)),
-                        SizedBox(height: context.h(28)),
-                        Obx(() => _buildContinueButton(context)),
-                        SizedBox(height: context.h(80)),
+        Text(
+          'Create an account to continue',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: context.sp(25),
+            fontFamily: 'Lato',
+            fontWeight: FontWeight.bold,
+            // NO context.h
+            height: 1.12,
+          ),
+        ),
+        SizedBox(height: context.h(18)),
+        Text(
+          'Creating an account gives you full functionality, '
+          'access to your route history, account settings and subscription status.',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: context.sp(18),
+            fontFamily: 'Lato',
+            fontWeight: FontWeight.w500,
+            // NO context.h
+            height: 1.44,
+          ),
+        ),
+        SizedBox(height: context.h(17)),
+        Obx(
+          () => EmailEditWidgets(
+            email: controller.email.value,
+            onEditTap: () {
+              Get.toNamed(AppRoutes.enterEmailScreen);
+            },
+          ),
+        ),
+        SizedBox(height: context.h(32)),
+        _buildPasswordField(context),
+        _buildProgressBar(context),
+        Obx(
+          () => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _ruleTile(
+                context,
+                controller.isSixChars.value,
+                "Use a minimum of six characters ( Case sensitive )",
+              ),
+              SizedBox(height: context.h(12)),
+              _ruleTile(
+                context,
+                controller.hasNumberOrSpecial.value,
+                "Use letters with at least one number or special character",
+              ),
+            ],
+          ),
+        ),
+        SizedBox(height: context.h(28)),
+        _buildTouchIDSwitch(context),
+        SizedBox(height: context.h(28)),
+        Obx(() => _buildTermsCheckbox(context)),
+        SizedBox(height: context.h(12)),
+        Obx(() => _buildPrivacyCheckbox(context)),
+        SizedBox(height: context.h(28)),
+        Obx(() => _buildContinueButton(context)),
+        SizedBox(height: context.h(80)),
       ],
     );
   }
@@ -296,8 +269,7 @@ class CreateAnAccount extends StatelessWidget {
                   ),
                   border: InputBorder.none,
                   isDense: true,
-                  contentPadding:
-                      EdgeInsets.symmetric(vertical: context.h(14)),
+                  contentPadding: EdgeInsets.symmetric(vertical: context.h(14)),
                 ),
               ),
             ),
@@ -361,6 +333,35 @@ class CreateAnAccount extends StatelessWidget {
     );
   }
 
+  Widget _buildTouchIDSwitch(BuildContext context) {
+    return Row(
+      children: [
+        CustomToggleSwitchAdvanced(
+          height: context.h(24),
+          width: context.w(51),
+          value: controller.useTouchId,
+          onChanged: (val) {
+            controller.useTouchId.value = val;
+          },
+          activeSvgPath: 'assets/icons/Check-orange.svg',
+          svgColor: AppColors.orange,
+          activeColor: AppColors.orange,
+          inactiveColor: Colors.white.withValues(alpha: 0.3),
+        ),
+        SizedBox(width: context.w(7)),
+        Text(
+          'Use touch ID',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: context.sp(16),
+            fontFamily: 'Lato',
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildTermsCheckbox(BuildContext context) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -400,8 +401,8 @@ class CreateAnAccount extends StatelessWidget {
                 ),
                 TextSpan(
                   text: ".",
-                  style: TextStyle(
-                      color: Colors.white, fontSize: context.sp(16)),
+                  style:
+                      TextStyle(color: Colors.white, fontSize: context.sp(16)),
                 ),
               ],
             ),
@@ -420,8 +421,8 @@ class CreateAnAccount extends StatelessWidget {
           _buildCustomCheckbox(
             context,
             controller.agreePrivacy.value,
-            () => controller.agreePrivacy.value =
-                !controller.agreePrivacy.value,
+            () =>
+                controller.agreePrivacy.value = !controller.agreePrivacy.value,
           ),
           SizedBox(width: context.w(7)),
           Expanded(
@@ -502,18 +503,16 @@ class CreateAnAccount extends StatelessWidget {
     final isEnabled = controller.isFormValid;
 
     return CustomButton(
-      text: 'AGREE & CONTINUE',
+      text: controller.isLoading.value ? 'LOADING...' : 'AGREE & CONTINUE',
       width: double.infinity,
       height: context.h(55),
       fontSize: 24,
       borderRadius: 10,
       isLoading: controller.isLoading.value,
-      showSpinner: true,
+      showSpinner: false,
       // Same fade logic as before: faded whenever the form isn't valid,
       // independent of loading state.
-      backgroundColor: isEnabled
-          ? const Color(0xffF58842)
-          : AppColors.orange.withValues(alpha: 0.5),
+      backgroundColor: isEnabled ? const Color(0xffF58842) : AppColors.medGray,
       onPressed: isEnabled && !controller.isLoading.value
           ? () {
               controller.createAccount(); // 🔥 API call

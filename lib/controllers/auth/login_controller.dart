@@ -14,6 +14,7 @@ class LoginController extends GetxController {
   // Observables
   final userEmail = ''.obs;
   final emailToken = ''.obs;
+  final passwordText = ''.obs;
   final hidePassword = true.obs;
   final isLoading = false.obs;
   final isSendingOtp = false.obs;
@@ -31,6 +32,9 @@ class LoginController extends GetxController {
   @override
   void onInit() {
     super.onInit();
+    passwordController.addListener(() {
+      passwordText.value = passwordController.text;
+    });
     _loadUserData();
     initializeBiometrics();
   }
@@ -178,11 +182,13 @@ class LoginController extends GetxController {
         // Since biometric uses local device security, it is safe to save it securely when enabled.
         if (isTouchIDEnabled.value) {
           await AuthService.saveUserPassword(passwordController.text.trim());
+        } else {
+          await AuthService.removeUserPassword();
         }
 
         _showSuccess(rawData['detail'] ?? 'Login successful!');
 
-        await fetchUserInfoAndRoute();
+        Get.offAllNamed(AppRoutes.weLoggedYou);
       } else {
         _showError(result['message'] ?? 'Login failed');
       }

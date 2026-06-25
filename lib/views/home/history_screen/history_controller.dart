@@ -4,6 +4,8 @@ import 'package:get/get.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:right_routes/core/routes/all_routes.dart';
 import 'package:right_routes/utils/colors.dart';
+import 'package:right_routes/core/constants/services/api_client.dart';
+import 'package:right_routes/views/home/home_api_constant/home_api_constant.dart';
 
 /// ---------------------------------------------------------------------------
 /// CONTROLLER (GetX)
@@ -12,46 +14,54 @@ class HistoryController extends GetxController {
   final TextEditingController searchController = TextEditingController();
   RxString searchQuery = "".obs;
   RxBool selectAll = false.obs;
+  RxBool isLoading = false.obs;
 
-  RxList<RouteItem> routes = <RouteItem>[
-    RouteItem(
-      id: "001",
-      date: "05/26/2025",
-      title: "Aurora Wind Farm in Tygard",
-      isSelected: false.obs,
-    ),
-    RouteItem(
-      id: "002",
-      date: "06/04/2025",
-      title: "Badger Wind Farm in Logan",
-      isSelected: false.obs,
-    ),
-    RouteItem(
-      id: "003",
-      date: "06/12/2025",
-      title: "Propane Tanks Downtown Fargo",
-      isSelected: false.obs,
-    ),
-    RouteItem(
-      id: "004",
-      date: "06/21/2025",
-      title: "Beethoven Wind SD",
-      isSelected: false.obs,
-      highlighted: true,
-    ),
-    RouteItem(
-      id: "005",
-      date: "07/15/2025",
-      title: "Crane move in Dallas",
-      isSelected: false.obs,
-    ),
-    RouteItem(
-      id: "006",
-      date: "08/28/2025",
-      title: "Equipment Transport",
-      isSelected: false.obs,
-    ),
-  ].obs;
+  RxList<RouteItem> routes = <RouteItem>[].obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    fetchRoutes();
+  }
+
+  Future<void> fetchRoutes({String query = ''}) async {
+    try {
+      isLoading.value = true;
+      String urlStr = '${HomeApiConstant.baseUrl}${HomeApiConstant.routePost}';
+      if (query.isNotEmpty) {
+        urlStr += '?search=$query';
+      }
+      final url = Uri.parse(urlStr);
+      final response = await ApiClient.get(url);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data['success'] == true && data['data'] != null) {
+          final List list = data['data'];
+          routes.value = list.map((e) => RouteItem.fromJson(e)).toList();
+        }
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to load routes',
+          backgroundColor: Colors.red.shade400,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.TOP,
+        );
+      }
+    } catch (e) {
+      debugPrint('Error fetching routes: $e');
+      Get.snackbar(
+        'Error',
+        'An error occurred while fetching routes',
+        backgroundColor: Colors.red.shade400,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
+    } finally {
+      isLoading.value = false;
+    }
+  }
 
   void updateSearch(String value) {
     searchQuery.value = value;
@@ -100,17 +110,70 @@ class HistoryController extends GetxController {
                 children: [
                   const Icon(Icons.notifications, color: Colors.white, size: 20),
                   GestureDetector(
-                    onTap: () {
-                      routes.removeWhere((route) => route.isSelected.value);
-                      selectAll.value = false;
+                    onTap: () async {
                       Get.back();
-                      Get.snackbar(
-                        'Success',
-                        'Routes deleted successfully',
-                        backgroundColor: Colors.green.shade400,
-                        colorText: Colors.white,
-                        snackPosition: SnackPosition.TOP,
-                      );
+                      
+                      try {
+                        Get.dialog(
+                          const Center(child: CircularProgressIndicator(color: AppColors.orange)),
+                          barrierDismissible: false,
+                        );
+
+                        final selectedIds = routes
+                            .where((route) => route.isSelected.value)
+                            .map((route) => int.tryParse(route.id) ?? 0)
+                            .where((id) => id != 0)
+                            .toList();
+
+                        final url = Uri.parse('${HomeApiConstant.baseUrl}/route/bulk-delete/');
+                        final response = await ApiClient.delete(
+                          url,
+                          body: {"route_ids": selectedIds},
+                        );
+
+                        if (Get.isDialogOpen ?? false) Get.back();
+
+                        if (response.statusCode == 200 || response.statusCode == 204) {
+                          final data = response.data;
+                          if (data['success'] == true) {
+                            Get.snackbar(
+                              'Success',
+                              data['message'] ?? 'Routes deleted successfully',
+                              backgroundColor: Colors.green.shade400,
+                              colorText: Colors.white,
+                              snackPosition: SnackPosition.TOP,
+                            );
+                            await fetchRoutes();
+                            cancel();
+                          } else {
+                            Get.snackbar(
+                              'Error',
+                              data['message'] ?? 'Failed to delete routes',
+                              backgroundColor: Colors.red.shade400,
+                              colorText: Colors.white,
+                              snackPosition: SnackPosition.TOP,
+                            );
+                          }
+                        } else {
+                          Get.snackbar(
+                            'Error',
+                            'Failed to delete routes',
+                            backgroundColor: Colors.red.shade400,
+                            colorText: Colors.white,
+                            snackPosition: SnackPosition.TOP,
+                          );
+                        }
+                      } catch (e) {
+                        if (Get.isDialogOpen ?? false) Get.back();
+                        debugPrint('Error deleting routes: $e');
+                        Get.snackbar(
+                          'Error',
+                          'An error occurred',
+                          backgroundColor: Colors.red.shade400,
+                          colorText: Colors.white,
+                          snackPosition: SnackPosition.TOP,
+                        );
+                      }
                     },
                     child: Container(
                       // ✅ UPDATED: Fluid padding instead of fixed height/width
@@ -154,7 +217,7 @@ class HistoryController extends GetxController {
     );
   }
 
-  void duplicateSelected() {
+  Future<void> duplicateSelected() async {
     final selectedRoutes =
         routes.where((route) => route.isSelected.value).toList();
 
@@ -198,16 +261,59 @@ class HistoryController extends GetxController {
     }
 
     final routeToDuplicate = selectedRoutes.first;
-    Get.toNamed(AppRoutes.confirmYourRoutes, arguments: routeToDuplicate); 
+    
+    try {
+      Get.dialog(
+        const Center(child: CircularProgressIndicator(color: AppColors.orange)),
+        barrierDismissible: false,
+      );
 
-    Get.snackbar(
-      'Opening Editor',
-      'Edit and save your duplicated route',
-      backgroundColor: Colors.blue.shade400,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
-      duration: const Duration(seconds: 2),
-    );
+      final url = Uri.parse('${HomeApiConstant.baseUrl}/route/${routeToDuplicate.id}/duplicate-route/');
+      final response = await ApiClient.post(url);
+
+      if (Get.isDialogOpen ?? false) Get.back();
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = response.data;
+        if (data['success'] == true) {
+          Get.snackbar(
+            'Success',
+            data['message'] ?? 'Route duplicated successfully',
+            backgroundColor: Colors.green.shade400,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.TOP,
+          );
+          await fetchRoutes();
+          cancel();
+        } else {
+          Get.snackbar(
+            'Error',
+            data['message'] ?? 'Failed to duplicate route',
+            backgroundColor: Colors.red.shade400,
+            colorText: Colors.white,
+            snackPosition: SnackPosition.TOP,
+          );
+        }
+      } else {
+        Get.snackbar(
+          'Error',
+          'Failed to duplicate route',
+          backgroundColor: Colors.red.shade400,
+          colorText: Colors.white,
+          snackPosition: SnackPosition.TOP,
+        );
+      }
+    } catch (e) {
+      if (Get.isDialogOpen ?? false) Get.back();
+      debugPrint('Error duplicating route: $e');
+      Get.snackbar(
+        'Error',
+        'An error occurred',
+        backgroundColor: Colors.red.shade400,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.TOP,
+      );
+    }
   }
 
   void cancel() {
@@ -216,71 +322,11 @@ class HistoryController extends GetxController {
       route.highlighted = false;
     }
     selectAll.value = false;
-
-    Get.snackbar(
-      'Cancelled',
-      'All selections cleared',
-      backgroundColor: Colors.grey.shade600,
-      colorText: Colors.white,
-      snackPosition: SnackPosition.TOP,
-      duration: const Duration(seconds: 1),
-    );
   }
 
   void searchRoutes() {
     final query = searchController.text.trim(); 
-
-    if (query.isEmpty) {
-      for (var route in routes) {
-        route.highlighted = false;
-      }
-      Get.snackbar(
-        'Search',
-        'Please enter a search term',
-        backgroundColor: Colors.orange.shade400,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 2),
-      );
-      return;
-    }
-
-    bool foundMatch = false;
-
-    for (var route in routes) {
-      final searchLower = query.toLowerCase();
-      final matchesId = route.id.toLowerCase().contains(searchLower);
-      final matchesDate = route.date.toLowerCase().contains(searchLower);
-      final matchesTitle = route.title.toLowerCase().contains(searchLower);
-
-      if (matchesId || matchesDate || matchesTitle) {
-        route.highlighted = true;
-        foundMatch = true;
-      } else {
-        route.highlighted = false;
-      }
-    }
-
-    routes.refresh(); 
-
-    if (!foundMatch) {
-      Get.snackbar(
-        'No Results',
-        'No routes found matching "$query"',
-        backgroundColor: Colors.orange.shade400,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-      );
-    } else {
-      Get.snackbar(
-        'Search Complete',
-        'Found matching routes',
-        backgroundColor: Colors.green.shade400,
-        colorText: Colors.white,
-        snackPosition: SnackPosition.TOP,
-        duration: const Duration(seconds: 1),
-      );
-    }
+    fetchRoutes(query: query);
   }
 
   void openRouteDetails(int index) {
@@ -339,4 +385,23 @@ class RouteItem {
     required this.isSelected,
     this.highlighted = false,
   });
+
+  factory RouteItem.fromJson(Map<String, dynamic> json) {
+    String formattedDate = '';
+    if (json['created_at'] != null) {
+      try {
+        final dt = DateTime.parse(json['created_at']);
+        formattedDate = '${dt.month.toString().padLeft(2, '0')}/${dt.day.toString().padLeft(2, '0')}/${dt.year}';
+      } catch (e) {
+        formattedDate = json['created_at'].toString();
+      }
+    }
+
+    return RouteItem(
+      id: json['id']?.toString() ?? '',
+      title: json['name'] ?? 'Unknown',
+      date: formattedDate,
+      isSelected: false.obs,
+    );
+  }
 }

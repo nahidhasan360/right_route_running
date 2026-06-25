@@ -80,6 +80,12 @@ class AuthService {
     return password;
   }
 
+  // Remove User Password
+  static Future<void> removeUserPassword() async {
+    print('🗑️ Removing User Password (Secure)');
+    await _secureStorage.delete(key: 'user_password');
+  }
+
   // ═══════════════════════════════════════════════════════════
   // 👤 USER DATA MANAGEMENT (SharedPreferences)
   // ═══════════════════════════════════════════════════════════

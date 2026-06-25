@@ -4,6 +4,7 @@ import 'package:right_routes/utils/assets_manager.dart';
 import 'package:right_routes/global_widgets/custom_buttons.dart';
 import 'package:right_routes/global_widgets/email_input_field.dart';
 import 'package:right_routes/controllers/auth/enter_email_controller.dart';
+import 'package:right_routes/utils/colors.dart';
 import 'package:right_routes/utils/responsive_ext.dart';
 
 class EnterEmailScreen extends StatelessWidget {
@@ -41,12 +42,11 @@ class EnterEmailScreen extends StatelessWidget {
                         child: Center(
                           child: ConstrainedBox(
                             constraints: BoxConstraints(
-                              maxWidth:
-                                  MediaQuery.of(context).size.width * 0.6,
+                              maxWidth: MediaQuery.of(context).size.width * 0.6,
                             ),
                             child: SingleChildScrollView(
-                              child: _buildFormContent(context,
-                                  showLogo: false),
+                              child:
+                                  _buildFormContent(context, showLogo: false),
                             ),
                           ),
                         ),
@@ -131,6 +131,9 @@ class EnterEmailScreen extends StatelessWidget {
               width: double.infinity,
               height: context.h(57),
               fontSize: 24, // ✅ raw number — CustomButton ভেতরে sp() করবে
+              backgroundColor: controller.email.value.trim().isEmpty
+                  ? AppColors.medGray
+                  : AppColors.orange,
               isLoading: controller.isLoading.value,
               showSpinner: false,
               onPressed: controller.isLoading.value

@@ -92,6 +92,8 @@ class ConfirmRouteController extends GetxController {
 
   @override
   void onClose() {
+    _waypointDebouncer?.cancel();
+    _routeNameDebouncer?.cancel();
     routeNameController.dispose();
     _clearWaypointControllers();
     mapController = null;
@@ -445,6 +447,21 @@ class ConfirmRouteController extends GetxController {
           waypointControllers[idx].text = address;
         }
 
+        // Auto-update to server
+        if (currentRouteId != null && currentPermitId != null) {
+          final wId = waypointIds[idx];
+          if (wId != null) {
+            final url = Uri.parse(
+                '${HomeApiConstant.baseUrl}/route/$currentRouteId/permit/$currentPermitId/waypoint/$wId/');
+            final formData = dio.FormData.fromMap({
+              'latitude': current.latitude.toString(),
+              'longitude': current.longitude.toString(),
+              'name': address,
+            });
+            await ApiClient.sendMultipartRequest(url, data: formData, method: 'PATCH');
+          }
+        }
+
         await _refreshMap();
       }
     });
@@ -774,7 +791,7 @@ class ConfirmRouteController extends GetxController {
 
       if (currentRouteId != null && currentPermitId != null) {
         final url = Uri.parse(
-            '${HomeApiConstant.baseUrl}/navigation/route/$currentRouteId/permit/$currentPermitId/add-waypoint/');
+            '${HomeApiConstant.baseUrl}/route/$currentRouteId/permit/$currentPermitId/waypoint/');
 
         final formData = dio.FormData.fromMap({
           'latitude': point.latitude.toString(),
@@ -785,12 +802,10 @@ class ConfirmRouteController extends GetxController {
         final response = await ApiClient.sendMultipartRequest(url,
             data: formData, method: 'POST');
         if (response.statusCode == 201 || response.statusCode == 200) {
-          final data = response.data;
-          if (data['data'] != null && data['data']['id'] != null) {
-            newId = data['data']['id'];
-          }
           Get.snackbar('Success', 'Waypoint added to server',
               backgroundColor: Colors.green, colorText: Colors.white);
+          await fetchPermitDetails(currentRouteId!, currentPermitId!);
+          return;
         } else {
           Get.snackbar('Error', 'Failed to add waypoint to server',
               backgroundColor: Colors.redAccent, colorText: Colors.white);
@@ -820,13 +835,8 @@ class ConfirmRouteController extends GetxController {
   }
 
   // FIXED: Delete pin with API call
-  Future<void> deleteSelectedMapPin() async {
-    final idx = selectedWaypointIndex.value;
-    if (idx == -1) {
-      Get.snackbar('No pin selected', 'Tap a pin on the map to select it',
-          backgroundColor: Colors.orange, colorText: Colors.white);
-      return;
-    }
+  Future<void> deleteWaypointAt(int idx) async {
+    if (idx < 0 || idx >= waypoints.length) return;
     if (waypoints.length <= 2) {
       Get.snackbar('Cannot remove', 'A route needs at least 2 waypoints',
           backgroundColor: Colors.orange, colorText: Colors.white);
@@ -837,7 +847,7 @@ class ConfirmRouteController extends GetxController {
     final wId = waypointIds[idx];
     if (wId != null && currentRouteId != null && currentPermitId != null) {
       final url = Uri.parse(
-          '${HomeApiConstant.baseUrl}/navigation/route/$currentRouteId/permit/$currentPermitId/remove-waypoint/$wId/');
+          '${HomeApiConstant.baseUrl}/route/$currentRouteId/permit/$currentPermitId/waypoint/$wId/');
 
       final response = await ApiClient.delete(url, headers: {
         'Content-Type': 'application/json',
@@ -860,8 +870,22 @@ class ConfirmRouteController extends GetxController {
     _waypointSelectedStates.removeAt(idx);
     waypointIds.removeAt(idx);
 
-    selectedWaypointIndex.value = -1;
+    if (selectedWaypointIndex.value == idx) {
+      selectedWaypointIndex.value = -1;
+    } else if (selectedWaypointIndex.value > idx) {
+      selectedWaypointIndex.value -= 1;
+    }
     await _refreshMap();
+  }
+
+  Future<void> deleteSelectedMapPin() async {
+    final idx = selectedWaypointIndex.value;
+    if (idx == -1) {
+      Get.snackbar('No pin selected', 'Tap a pin on the map to select it',
+          backgroundColor: Colors.orange, colorText: Colors.white);
+      return;
+    }
+    await deleteWaypointAt(idx);
   }
 
   void deleteSelectedWaypoint() => deleteSelectedMapPin();
@@ -873,7 +897,7 @@ class ConfirmRouteController extends GetxController {
       final wId = waypointIds[idx];
       if (wId != null) {
         final url = Uri.parse(
-            '${HomeApiConstant.baseUrl}/navigation/route/$currentRouteId/permit/$currentPermitId/update-waypoint/$wId/');
+            '${HomeApiConstant.baseUrl}/route/$currentRouteId/permit/$currentPermitId/waypoint/$wId/');
 
         final point = _waypointPositions[idx];
         final name = waypointControllers[idx].text;
@@ -922,10 +946,46 @@ class ConfirmRouteController extends GetxController {
     _addAllMarkers();
   }
 
+  Timer? _waypointDebouncer;
+
   void updateWaypoint(int index, String val) {
     if (index >= 0 && index < waypoints.length) {
       waypoints[index] = val;
       waypoints.refresh();
+
+      if (_waypointDebouncer?.isActive ?? false) {
+        _waypointDebouncer!.cancel();
+      }
+      _waypointDebouncer = Timer(const Duration(milliseconds: 1000), () async {
+        try {
+          if (val.isNotEmpty) {
+            // Geocode the typed address
+            List<Location> locations = await locationFromAddress(val).timeout(const Duration(seconds: 8));
+            if (locations.isNotEmpty) {
+              final loc = locations.first;
+              final newPos = LatLng(loc.latitude, loc.longitude);
+              _waypointPositions[index] = newPos;
+              await _refreshMap(); // Update the map to show the new location
+              
+              if (currentRouteId != null && currentPermitId != null) {
+                final wId = waypointIds[index];
+                if (wId != null) {
+                  final url = Uri.parse(
+                      '${HomeApiConstant.baseUrl}/route/$currentRouteId/permit/$currentPermitId/waypoint/$wId/');
+                  final formData = dio.FormData.fromMap({
+                    'latitude': newPos.latitude.toString(),
+                    'longitude': newPos.longitude.toString(),
+                    'name': val,
+                  });
+                  await ApiClient.sendMultipartRequest(url, data: formData, method: 'PATCH');
+                }
+              }
+            }
+          }
+        } catch (e) {
+          debugPrint('Geocoding error or API error: $e');
+        }
+      });
     }
   }
 
@@ -970,7 +1030,7 @@ class ConfirmRouteController extends GetxController {
     }
   }
 
-  void addWaypointAt(int index) {
+  void addWaypointAt(int index) async {
     if (index >= _waypointPositions.length) return;
     final p1 = _waypointPositions[index];
     final p2 = (index < _waypointPositions.length - 1)
@@ -980,6 +1040,22 @@ class ConfirmRouteController extends GetxController {
       (p1.latitude + p2.latitude) / 2,
       (p1.longitude + p2.longitude) / 2,
     );
+    
+    if (currentRouteId != null && currentPermitId != null) {
+      final url = Uri.parse(
+          '${HomeApiConstant.baseUrl}/route/$currentRouteId/permit/$currentPermitId/waypoint/');
+      final formData = dio.FormData.fromMap({
+        'latitude': mid.latitude.toString(),
+        'longitude': mid.longitude.toString(),
+        'name': 'New Stop',
+      });
+      final response = await ApiClient.sendMultipartRequest(url, data: formData, method: 'POST');
+      if (response.statusCode == 201 || response.statusCode == 200) {
+        await fetchPermitDetails(currentRouteId!, currentPermitId!);
+        return;
+      }
+    }
+
     waypoints.insert(index + 1, 'New Stop');
     waypointControllers.insert(
         index + 1, TextEditingController(text: 'New Stop'));

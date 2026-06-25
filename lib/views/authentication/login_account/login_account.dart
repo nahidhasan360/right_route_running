@@ -35,8 +35,7 @@ class LoginAccount extends StatelessWidget {
         child: SafeArea(
           child: OrientationBuilder(
             builder: (context, orientation) {
-              final bool isLandscape =
-                  orientation == Orientation.landscape;
+              final bool isLandscape = orientation == Orientation.landscape;
               return Padding(
                 padding: isLandscape
                     ? EdgeInsets.all(context.s(12))
@@ -51,8 +50,7 @@ class LoginAccount extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           SizedBox(
-                            width:
-                                MediaQuery.of(context).size.width * 0.45,
+                            width: MediaQuery.of(context).size.width * 0.45,
                             child: SingleChildScrollView(
                               physics: const BouncingScrollPhysics(),
                               child: _buildHeader(context, isLandscape),
@@ -157,12 +155,7 @@ class LoginAccount extends StatelessWidget {
                   ),
                   recognizer: TapGestureRecognizer()
                     ..onTap = () {
-                      if (Get.previousRoute == AppRoutes.enterEmailScreen ||
-                          Get.previousRoute == '/EnterEmailScreen') {
-                        Get.back();
-                      } else {
-                        Get.to(() => EnterEmailScreen());
-                      }
+                      Get.toNamed(AppRoutes.enterEmailScreen);
                     },
                 ),
               ],
@@ -266,6 +259,7 @@ class LoginAccount extends StatelessWidget {
                         },
                   isLoading: controller.isLoading.value,
                   showSpinner: false,
+                  backgroundColor: controller.passwordText.value.isEmpty ? AppColors.medGray : AppColors.orange,
                   height: context.h(58),
                 ),
               ),
@@ -273,8 +267,7 @@ class LoginAccount extends StatelessWidget {
             SizedBox(width: context.w(10)),
             Obx(
               () => GestureDetector(
-                onTap: controller.isLoading.value ||
-                        controller.availableBiometrics.isEmpty
+                onTap: controller.isLoading.value
                     ? null
                     : () async {
                         print('\n👆 Fingerprint button pressed!');
@@ -285,8 +278,7 @@ class LoginAccount extends StatelessWidget {
                   height: context.h(53),
                   width: context.w(55),
                   decoration: BoxDecoration(
-                    color: controller.isLoading.value ||
-                            controller.availableBiometrics.isEmpty
+                    color: controller.isLoading.value
                         ? AppColors.orange.withValues(alpha: 0.5)
                         : AppColors.orange,
                     borderRadius: BorderRadius.circular(context.r(50)),

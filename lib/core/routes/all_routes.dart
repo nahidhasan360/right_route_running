@@ -13,7 +13,7 @@ import '../../views/authentication/enter_email_for_delete/enter_email_for_delete
 import '../../views/authentication/enter_email_screen/enter_email_screen.dart';
 import '../../views/authentication/get_started_screen/get_started_screen.dart';
 import '../../views/authentication/get_started_screen/getstarted_sign_in_screen.dart';
-import '../../views/authentication/login_account/email_edit/email_edit.dart';
+// import '../../views/authentication/login_account/email_edit/email_edit.dart';
 import '../../views/authentication/login_account/login_account.dart';
 import '../../views/authentication/login_account/otp_verification/otp_verification_binding.dart';
 import '../../views/authentication/login_account/otp_verification/otp_verification_screen.dart';
@@ -155,11 +155,11 @@ class AppRoutes {
       page: () => OtpVerificationScreen(),
       binding: OtpVerificationBinding(),
     ),
-    GetPage(
-        transition: Transition.fadeIn,
-        transitionDuration: const Duration(milliseconds: 300),
-        name: emailEdit,
-        page: () => EmailEdit()),
+    // GetPage(
+    //     transition: Transition.fadeIn,
+    //     transitionDuration: const Duration(milliseconds: 300),
+    //     name: emailEdit,
+    //     page: () => EmailEdit()),
 
     GetPage(
         transition: Transition.fadeIn,
